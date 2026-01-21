@@ -1,4 +1,4 @@
-name: Deploy Admin Panel
+name: Deploy Admin Panel (Server Pull)
 
 on:
   push:
@@ -10,41 +10,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Node here is only for GitHub runner (optional but fine)
-      - name: Setup Node (Runner)
-        uses: actions/setup-node@v4
+      - name: Deploy Admin Panel via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          node-version: 20
-          cache: 'npm'
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -e
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+            echo "🚀 Deploying Admin Panel..."
 
-      - name: Deploy to server
-        run: |
-          ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            # Load NVM
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-          # Load NVM
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            echo "🟢 Using Node 20"
+            nvm use 20
+            node -v
+            npm -v
 
-          # Force Node 20 on server
-          nvm install 20
-          nvm use 20
+            echo "📂 Moving to admin panel directory"
+            cd /var/www/dev-app/admin-panel/jytechinvestment-admin
 
-          node -v
-          npm -v
+            echo "📥 Pulling latest code"
+            git pull origin main
 
-          cd ${{ secrets.SERVER_PATH }}
+            echo "📦 Installing dependencies"
+            npm ci
 
-          git pull origin main
-          npm ci
-          npm run build
+            echo "🏗️ Building admin panel"
+            npm run build
 
-          EOF
+            echo "♻️ Reloading Nginx"
+            sudo systemctl reload nginx
+
+            echo "✅ Admin Panel Deployment Completed"
