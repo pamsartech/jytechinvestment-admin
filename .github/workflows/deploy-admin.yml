@@ -13,7 +13,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      # Node here is only for GitHub runner (optional but fine)
+      - name: Setup Node (Runner)
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -29,7 +30,19 @@ jobs:
           ssh -o StrictHostKeyChecking=no \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
 
+          # Load NVM
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+          # Force Node 20 on server
+          nvm install 20
+          nvm use 20
+
+          node -v
+          npm -v
+
           cd ${{ secrets.SERVER_PATH }}
+
           git pull origin main
           npm ci
           npm run build
