@@ -1,4 +1,4 @@
-name: Deploy Admin Panel (Safe & Locked)
+name: Deploy Admin Panel (Server Pull)
 
 on:
   push:
@@ -14,43 +14,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build admin panel
-        run: npm run build
-
-      - name: Upload build to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/*"
-          target: "/var/www/dev-app/admin-panel/releases/${{ github.sha }}"
-
-      - name: Activate release (atomic)
+      - name: Deploy Admin Panel via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
           script: |
             set -e
 
-            BASE="/var/www/dev-app/admin-panel"
-            RELEASE="${BASE}/releases/${{ github.sha }}"
-            CURRENT="${BASE}/current"
+            echo "🚀 Deploying Admin Panel..."
 
-            ln -sfn "$RELEASE" "$CURRENT"
+            # 1️⃣ Go to admin panel repo
+            cd /var/www/dev-app/admin-panel/jytechinvestment-admin
 
-            echo "✅ Admin panel deployed safely"
+            echo "📥 Pulling latest code"
+            git pull origin main
+
+            echo "📦 Installing dependencies"
+            npm install
+
+            echo "🏗️ Building admin panel"
+            npm run build
+
+            echo "🧹 Cleaning old admin build"
+            rm -rf /var/www/dev-app/admin-panel/current/*
+
+            echo "📁 Copying new build"
+            cp -r dist/* /var/www/dev-app/admin-panel/current/
+
+            echo "♻️ Reloading Nginx"
+            sudo systemctl reload nginx
+
+            echo "✅ Admin Panel Deployment Completed"
