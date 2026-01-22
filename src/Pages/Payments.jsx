@@ -12,6 +12,38 @@ import { LuArrowDownUp } from "react-icons/lu";
 import { IoIosArrowForward } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../Components/Navbar";
+import Skeleton from "@mui/material/Skeleton";
+
+const TableSkeleton = ({ rows = 9 }) => {
+  return (
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <table className="w-full text-sm table-auto">
+        <thead className="bg-gray-50">
+          <tr>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <th key={i} className="px-6 py-4">
+                <Skeleton variant="text" width={80} height={20} />
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {Array.from({ length: rows }).map((_, rowIndex) => (
+            <tr key={rowIndex} className="border-t">
+              {Array.from({ length: 8 }).map((_, colIndex) => (
+                <td key={colIndex} className="px-6 py-4">
+                  <Skeleton variant="rectangular" height={20} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 
 /* ---------------- CONFIG ---------------- */
 const PAGE_SIZE = 9;
@@ -19,35 +51,35 @@ const PAGE_SIZE = 9;
 /* ---------------- STATUS UI ---------------- */
 const STATUS_UI = {
   Paid: {
-    label: "Paid",
+    label: "Payé",
     class: "bg-green-100 text-green-700",
     icon: <FaCheck />,
   },
   Pending: {
-    label: "Pending",
+    label: "En attente",
     class: "bg-yellow-100 text-yellow-700",
     icon: <FaClock />,
   },
   Failed: {
-    label: "Failed",
+    label: "Échoué",
     class: "bg-red-100 text-red-600",
     icon: <FaExclamation />,
   },
-  Refunded: {
-    label: "Refunded",
-    class: "bg-blue-100 text-blue-600",
-    icon: <FaUndo />,
-  },
+  // Refunded: {
+  //   label: "Refunded",
+  //   class: "bg-blue-100 text-blue-600",
+  //   icon: <FaUndo />,
+  // },
 };
 
 const SUBSCRIPTION_UI = {
   Active: {
-    label: "Active",
+    label: "Actif",
     class: "bg-green-100 text-green-700",
     icon: <FaCheck />,
   },
   Inactive: {
-    label: "Inactive",
+    label: "Inactif",
     class: "bg-red-100 text-red-600",
     icon: <FaExclamation />,
   },
@@ -250,11 +282,8 @@ export default function Payments() {
         </div>
 
         {/* STATES */}
-        {loading && (
-          <div className="text-center py-10 text-gray-500">
-            Loading payments...
-          </div>
-        )}
+      {loading && <TableSkeleton rows={PAGE_SIZE} />}
+
 
         {error && <div className="text-center py-10 text-red-500">{error}</div>}
 
@@ -285,7 +314,7 @@ export default function Payments() {
 
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-2 px-4 py-1 rounded-full text-xs w-20 justify-center ${ui.class}`}
+                          className={`inline-flex items-center gap-2 px-4 py-1 rounded-full text-xs w-22 justify-center ${ui.class}`}
                         >
                           {/* {ui.icon} */}
                           {ui.label}

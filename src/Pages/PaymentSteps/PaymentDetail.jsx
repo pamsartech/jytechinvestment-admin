@@ -13,6 +13,61 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import Navbar from "../../Components/Navbar";
+import Skeleton from "@mui/material/Skeleton";
+
+const PaymentDetailsSkeleton = () => {
+  return (
+    <div>
+      <Navbar heading="Gestion des paiements" />
+
+      <div className="p-6 mt-5 bg-gray-50 min-h-screen">
+        {/* Back */}
+        <div className="mb-4">
+          <Skeleton width={180} height={22} />
+        </div>
+
+        {/* Title */}
+        <Skeleton width={260} height={32} className="mb-6" />
+
+        {/* Card */}
+        <div className="bg-white rounded-xl shadow-sm max-w-6xl">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-gray-300">
+            <Skeleton width={220} height={22} />
+            <Skeleton width={360} height={16} className="mt-1" />
+          </div>
+
+          {/* Content */}
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {/* Left Column */}
+            <div className="p-6 border-r border-gray-300 space-y-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i}>
+                  <Skeleton width={180} height={16} className="mb-2" />
+                  <Skeleton width="70%" height={22} />
+                  {i === 0 && (
+                    <Skeleton width="50%" height={16} className="mt-1" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Right Column */}
+            <div className="p-6 space-y-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i}>
+                  <Skeleton width={200} height={16} className="mb-2" />
+                  <Skeleton width="80%" height={22} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 export default function PaymentDetails() {
   const { id } = useParams();
@@ -58,16 +113,10 @@ export default function PaymentDetails() {
   };
 
   /* ---------------- LOADING / ERROR ---------------- */
-  if (loading) {
-    return (
-      <div>
-        <Navbar heading="Payment Management" />
-        <div className="p-6 text-center text-gray-500">
-          Loading payment details...
-        </div>
-      </div>
-    );
-  }
+ if (loading) {
+  return <PaymentDetailsSkeleton />;
+}
+
 
   if (error) {
     return (
@@ -117,7 +166,7 @@ export default function PaymentDetails() {
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
                   <FaUser />
-                 Nom du client
+                  Nom du client
                 </div>
                 <p className="font-medium">
                   {user.firstName} {user.lastName}
@@ -130,7 +179,7 @@ export default function PaymentDetails() {
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
                   <FaInfoCircle />
-                 Statut du paiement automatique
+                  Statut du paiement automatique
                 </div>
 
                 <span
@@ -155,8 +204,8 @@ export default function PaymentDetails() {
                   />
                   {typeof payment?.subscriptionStatus === "string" &&
                   payment.subscriptionStatus.toLowerCase() === "active"
-                    ? "Active"
-                    : "Inactive"}
+                    ? "Actif"
+                    : "Inactif"}
                 </span>
               </div>
 
@@ -164,7 +213,7 @@ export default function PaymentDetails() {
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
                   <FaCalendarAlt />
-                 Plan d'abonnement
+                  Plan d'abonnement
                 </div>
 
                 <span className="inline-flex items-center gap-2 px-4 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
@@ -176,18 +225,18 @@ export default function PaymentDetails() {
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
                   <FaInfoCircle />
-                 Statut du paiement
+                  Statut du paiement
                 </div>
 
                 {isPaid ? (
                   <span className="inline-flex items-center gap-2 px-4 py-1 text-xs rounded-full bg-green-100 text-green-700">
                     <FaCheck />
-                    Paid
+                    Payé
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-2 px-4 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">
                     <FaTimes />
-                    Pending
+                    En attente
                   </span>
                 )}
               </div>
@@ -251,7 +300,7 @@ export default function PaymentDetails() {
                 <div>
                   <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
                     <FaInfoCircle />
-                   Rabais
+                    Rabais
                   </div>
                   <span>€ {payment.discount}</span>
                 </div>
@@ -261,7 +310,7 @@ export default function PaymentDetails() {
                 <div>
                   <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
                     <FaInfoCircle />
-                   Code promotionnel
+                    Code promotionnel
                   </div>
                   <span>{payment.promoCode}</span>
                 </div>

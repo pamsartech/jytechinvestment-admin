@@ -3,6 +3,69 @@ import axios from "axios";
 import Navbar from "../Components/Navbar";
 import { FiUsers, FiFileText } from "react-icons/fi";
 import { LuUserRoundCheck, LuUserRoundX } from "react-icons/lu";
+import { Skeleton } from "@mui/material";
+
+const StatsSkeleton = () => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 p-6">
+    {Array.from({ length: 4 }).map((_, i) => (
+      <div
+        key={i}
+        className="p-5 rounded-2xl shadow-md bg-white space-y-4"
+      >
+        <div className="flex justify-between">
+          <Skeleton variant="text" width={140} />
+          <Skeleton variant="circular" width={24} height={24} />
+        </div>
+        <Skeleton variant="text" width={80} height={32} />
+      </div>
+    ))}
+  </div>
+);
+
+
+const SubscriptionRowsSkeleton = () => (
+  <div className="space-y-4 mt-4">
+    {Array.from({ length: 5 }).map((_, i) => (
+      <div key={i} className="grid grid-cols-4 items-center px-5 gap-4">
+        <Skeleton variant="text" width="70%" />
+        <Skeleton variant="text" width="60%" />
+        <Skeleton
+          variant="rectangular"
+          width={90}
+          height={24}
+          sx={{ borderRadius: 12 }}
+        />
+        <Skeleton variant="text" width="50%" sx={{ ml: "auto" }} />
+      </div>
+    ))}
+  </div>
+);
+
+const ActivitySkeleton = () => (
+  <div className="space-y-5">
+    {Array.from({ length: 5 }).map((_, i) => (
+      <div
+        key={i}
+        className="flex items-start justify-between"
+      >
+        <div className="flex gap-3">
+          <Skeleton variant="circular" width={36} height={36} />
+          <div className="space-y-2">
+            <Skeleton variant="text" width={120} />
+            <Skeleton variant="text" width={180} />
+            <Skeleton
+              variant="rectangular"
+              width={80}
+              height={18}
+              sx={{ borderRadius: 12 }}
+            />
+          </div>
+        </div>
+        <Skeleton variant="text" width={50} />
+      </div>
+    ))}
+  </div>
+);
 
 
 function Dashboard() {
@@ -140,15 +203,27 @@ const planBadge = (plan) =>
     : "bg-gray-100 text-gray-600";
 
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-600 text-lg font-medium">
-          Loading dashboard...
-        </p>
+ if (loading) {
+  return (
+    <div className="bg-gray-100 min-h-screen">
+      <Navbar heading="Tableau de bord " />
+      <StatsSkeleton />
+
+      <div className="space-y-8 mt-5 pb-8">
+        <div className="bg-white rounded-2xl p-6 mx-6">
+          <Skeleton variant="text" width={220} height={28} />
+          <SubscriptionRowsSkeleton />
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 mx-6">
+          <Skeleton variant="text" width={200} height={28} />
+          <ActivitySkeleton />
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   if (error) {
     return (
@@ -245,11 +320,8 @@ const planBadge = (plan) =>
 
         {/* Rows */}
        <div className="space-y-4 mt-4">
-  {recentLoading && (
-    <p className="text-sm text-gray-500 text-center">
-      Loading subscriptions...
-    </p>
-  )}
+   {recentLoading && <SubscriptionRowsSkeleton />}
+
 
   {!recentLoading && recentSubscriptions.length === 0 && (
     <p className="text-sm text-gray-500 text-center">
@@ -299,11 +371,8 @@ const planBadge = (plan) =>
         </div>
 
        <div className="space-y-5">
-  {recentLoading && (
-    <p className="text-sm text-gray-500 text-center">
-      Loading activity...
-    </p>
-  )}
+  {recentLoading && <ActivitySkeleton />}
+
 
   {!recentLoading && recentActivities.length === 0 && (
     <p className="text-sm text-gray-500 text-center">

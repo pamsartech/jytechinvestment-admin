@@ -59,7 +59,7 @@ const Login = () => {
 
         {/* Right: Form Section */}
         <div className="w-full md:w-1/2 flex flex-col justify-center p-8 md:p-12 space-y-6">
-          <h2 className="text-[#01332B] text-3xl font-semibold mb-2">Log In</h2>
+          <h2 className="text-[#01332B] text-3xl font-semibold mb-2">Se connecter</h2>
 
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Username Field */}
@@ -80,7 +80,7 @@ const Login = () => {
               {/* <label className="block text-[#01332B] text-sm mb-1">Mot de passe</label> */}
               <input
                 type={showPassword ? "text" : "Password"}
-                placeholder="Password"
+                placeholder="Mot de passe"
                 value={Password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -101,7 +101,7 @@ const Login = () => {
             )}
 
             {/* Remember / Forgot */}
-            <div className="flex items-center justify-between text-sm text-[#01332B]">
+            {/* <div className="flex items-center justify-between text-sm text-[#01332B]">
               <label className="flex items-center space-x-2">
                 <input type="checkbox" className="accent-[#01332B]" />
                 <span>Souviens-toi de moi</span>
@@ -109,7 +109,8 @@ const Login = () => {
               <a href="#" className="hover:underline">
                 Mot de passe oublié ?
               </a>
-            </div>
+            </div>  */}
+            
 
             {/* Submit Button with Spinner */}
             <button
@@ -143,10 +144,10 @@ const Login = () => {
                       d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                     ></path>
                   </svg>
-                  <span>Logging In...</span>
+                  <span>Se connecter...</span>
                 </>
               ) : (
-                <span>Login</span>
+                <span>Se connecter</span>
               )}
             </button>
           </form>

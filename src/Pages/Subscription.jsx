@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import Navbar from "../Components/Navbar";
+import { toast } from "react-toastify";
+
 
 export default function Subscription() {
   const [activeTab, setActiveTab] = useState("plus");
@@ -30,6 +32,44 @@ export default function Subscription() {
   const [freePlanName, setFreePlanName] = useState("Free Plan");
   const [freeDescription, setFreeDescription] = useState("");
   const [freeIsActive, setFreeIsActive] = useState(true);
+
+
+  const toastConfirm = (message) =>
+  new Promise((resolve) => {
+    const id = toast.info(
+      ({ closeToast }) => (
+        <div className="space-y-3">
+          <p className="text-sm font-medium">{message}</p>
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => {
+                toast.dismiss(id);
+                resolve(false);
+              }}
+              className="px-3 py-1 text-sm border rounded"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={() => {
+                toast.dismiss(id);
+                resolve(true);
+              }}
+              className="px-3 py-1 text-sm bg-emerald-900 text-white rounded"
+            >
+              Confirmer
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+      }
+    );
+  });
+
 
  useEffect(() => {
   const fetchPlans = async () => {
@@ -101,30 +141,36 @@ export default function Subscription() {
 
   /* ================= SAVE HANDLERS plus plan================= */
   const handleSavePlus = async () => {
+  const confirmed = await toastConfirm(
+    "Êtes-vous sûr de vouloir enregistrer les modifications de l’offre Plus ?"
+  );
+
+  if (!confirmed) return;
+
+  const loadingToast = toast.loading("Enregistrement de l’offre Plus...");
+
   setLoading(true);
 
   const payload = {
     name: planName,
     type: "premium",
-    currency: currency.toLowerCase(), // "eur"
+    currency: currency.toLowerCase(),
     description,
-    // isPopular: true, // or manage via toggle if needed
     isActive,
     features: features.filter(Boolean),
     prices: [
-  {
-    durationMonths: 1,
-    price: Number(monthlyPrice),
-    label: "Monthly",
-  },
-  {
-    durationMonths: 12,
-    price: Number(annualPrice), // discounted price
-    actualPrice: Number(actualPrice), // original price
-    label: "Yearly",
-  },
-],
-
+      {
+        durationMonths: 1,
+        price: Number(monthlyPrice),
+        label: "Monthly",
+      },
+      {
+        durationMonths: 12,
+        price: Number(annualPrice),
+        actualPrice: Number(actualPrice),
+        label: "Yearly",
+      },
+    ],
   };
 
   try {
@@ -134,30 +180,49 @@ export default function Subscription() {
       authConfig
     );
 
-    alert("Plus plan saved successfully");
+    toast.update(loadingToast, {
+      render: "Offre Plus enregistrée avec succès",
+      type: "success",
+      isLoading: false,
+      autoClose: 3000,
+    });
   } catch (err) {
     console.error(err);
-    alert("Failed to save Plus plan");
+
+    toast.update(loadingToast, {
+      render: "Échec de l’enregistrement de l’offre Plus",
+      type: "error",
+      isLoading: false,
+      autoClose: 4000,
+    });
   } finally {
     setLoading(false);
   }
 };
 
+
 // free plan
  const handleSaveFree = async () => {
+  const confirmed = await toastConfirm(
+    "Êtes-vous sûr de vouloir enregistrer les modifications du plan gratuit ?"
+  );
+
+  if (!confirmed) return;
+
+  const loadingToast = toast.loading("Enregistrement du plan gratuit...");
+
   setLoading(true);
 
   const payload = {
     name: freePlanName,
-    type: "basic", // must match backend discriminator
-    currency: "eur", // required by plan schema
+    type: "basic",
+    currency: "eur",
     description: freeDescription,
     isActive: freeIsActive,
     features: features.filter(Boolean),
-
     prices: [
       {
-        durationMonths: 0, // lifetime / free
+        durationMonths: 0,
         price: 0,
         label: "Free",
       },
@@ -171,14 +236,26 @@ export default function Subscription() {
       authConfig
     );
 
-    alert("Free plan saved successfully");
+    toast.update(loadingToast, {
+      render: "Plan gratuit enregistré avec succès",
+      type: "success",
+      isLoading: false,
+      autoClose: 3000,
+    });
   } catch (err) {
     console.error(err);
-    alert("Failed to save Free plan");
+
+    toast.update(loadingToast, {
+      render: "Échec de l’enregistrement du plan gratuit",
+      type: "error",
+      isLoading: false,
+      autoClose: 4000,
+    });
   } finally {
     setLoading(false);
   }
 };
+
 
 
   return (

@@ -8,6 +8,40 @@ import { IoFilterOutline } from "react-icons/io5";
 import { LuArrowDownUp } from "react-icons/lu";
 import { IoIosArrowForward } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
+import { Skeleton } from "@mui/material";
+
+const UsersTableSkeleton = () => (
+  <div className="bg-white border border-gray-200 rounded-2xl mt-8 p-2 overflow-hidden">
+    <table className="w-full text-sm">
+      <thead className="bg-gray-50">
+        <tr>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <th key={i} className="p-4">
+              <Skeleton variant="text" width={100} />
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+        {Array.from({ length: 9 }).map((_, row) => (
+          <tr key={row}>
+            {Array.from({ length: 7 }).map((_, col) => (
+              <td key={col} className="p-4">
+                {col === 6 ? (
+                  <Skeleton variant="circular" width={20} height={20} />
+                ) : (
+                  <Skeleton variant="text" width="80%" />
+                )}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
 
 const PAGE_SIZE = 9;
 
@@ -149,6 +183,21 @@ export default function CustomersTable() {
 
   useEffect(() => setPage(1), [tab, query, statusFilter, sortBy]);
 
+  const ROLE_LABELS = {
+    permium_user: "Utilisateur Premium",
+    invited: "Invités",
+    user: "Utilisatrice",
+  };
+
+  const STATUS_LABELS = {
+    Active: "Actif",
+    Inactive: "Inactif",
+    Blocked: "Bloqué",
+  };
+
+  const getRoleLabel = (role) => ROLE_LABELS[role] || role;
+  const getStatusLabel = (status) => STATUS_LABELS[status] || status;
+
   /* ----------------------------------
      FILTERING & SORTING (UNCHANGED)
   -----------------------------------*/
@@ -187,9 +236,39 @@ export default function CustomersTable() {
   /* ----------------------------------
      RENDER
   -----------------------------------*/
-  if (loading) {
-    return <div className="p-6">Loading users...</div>;
-  }
+ if (loading) {
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Top Controls stay visible */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <Skeleton variant="rectangular" width={140} height={42} />
+        <Skeleton variant="rectangular" width={320} height={42} />
+      </div>
+
+      <div className="flex flex-wrap gap-3 mb-4">
+        <Skeleton variant="rectangular" width="100%" height={48} />
+        <Skeleton variant="rectangular" width={140} height={48} />
+        <Skeleton variant="rectangular" width={140} height={48} />
+      </div>
+
+      <UsersTableSkeleton />
+
+      {/* Pagination Skeleton */}
+      <div className="flex justify-center items-center gap-2 mt-8">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton
+            key={i}
+            variant="rectangular"
+            width={36}
+            height={36}
+            sx={{ borderRadius: 8 }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
   if (error) {
     return <div className="p-6 text-red-600">{error}</div>;
@@ -208,7 +287,7 @@ export default function CustomersTable() {
             }`}
           >
             <FiUsers className="inline mr-2 mb-1" size={21} />
-            Tous 
+            Tous
           </button>
           <button
             onClick={() => setTab("Invited")}
@@ -217,7 +296,7 @@ export default function CustomersTable() {
             }`}
           >
             <RxEnvelopeOpen className="inline mr-2" size={20} />
-            Invités 
+            Invités
           </button>
         </div>
 
@@ -360,7 +439,7 @@ export default function CustomersTable() {
           <thead className="bg-gray-50 text-[#616F89]">
             <tr>
               <th className="p-4 text-left">Nom d’utilisateur </th>
-              <th className="p-4 text-left">EMAIL</th>
+              <th className="p-4 text-left">Email</th>
               <th className="p-4 text-left">Numéro de téléphone </th>
               <th className="p-4 text-left">Date d’inscription</th>
               <th className="p-4 text-left">Rôle</th>
@@ -385,11 +464,7 @@ export default function CustomersTable() {
                           : "bg-gray-100 px-9 text-gray-700"
                     }`}
                   >
-                    {u.role === "permium_user"
-                      ? "Premium User"
-                      : u.role === "invited"
-                        ? "Invited"
-                        : "User"}
+                    {getRoleLabel(u.role)}
                   </span>
                 </td>
 
@@ -403,9 +478,10 @@ export default function CustomersTable() {
                           : "bg-gray-100 text-gray-600"
                     }`}
                   >
-                    {u.status}
+                    {getStatusLabel(u.status)}
                   </span>
                 </td>
+
                 <td className="p-4">
                   <button
                     onClick={() => navigate(`/user/customer-detail/${u.id}`)}
@@ -428,7 +504,7 @@ export default function CustomersTable() {
           className="flex items-center gap-1 px-3 h-9 rounded-lg border border-gray-300 bg-white disabled:opacity-40"
         >
           <span>‹</span>
-          <span className="text-sm font-medium">Previous</span>
+          <span className="text-sm font-medium">Précédent</span>
         </button>
 
         {/* Page Numbers */}
@@ -454,7 +530,7 @@ export default function CustomersTable() {
           disabled={page === totalPages}
           className="flex items-center gap-1 px-3 h-9 rounded-lg border border-gray-300 bg-white disabled:opacity-40"
         >
-          <span className="text-sm font-medium">Next</span>
+          <span className="text-sm font-medium">suivant</span>
           <span>›</span>
         </button>
       </div>

@@ -2,17 +2,116 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaArrowLeft, FaBan } from "react-icons/fa";
+import { toast } from "react-toastify";
+import Skeleton from "@mui/material/Skeleton";
+
 
 const USER_STATUS_UI = {
   active: {
-    label: "User Active",
+    label: "Utilisateur Actif",
     pill: "bg-green-100 text-green-700",
   },
   blocked: {
-    label: "User Blocked",
+    label: "Utilisateur Bloqué",
     pill: "bg-red-100 text-red-700",
   },
 };
+
+const CustomerDetailSkeleton = () => {
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* Back Button */}
+      <div className="mb-4">
+        <Skeleton width={180} height={24} />
+      </div>
+
+      {/* Title */}
+      <Skeleton width={280} height={32} className="mb-6" />
+
+      {/* Overview + Actions */}
+      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+        {/* Overview Card */}
+        <div className="lg:col-span-2 bg-white border border-gray-300 rounded-xl shadow-sm">
+          <div className="flex justify-between px-6 py-4 border-b border-gray-300">
+            <Skeleton width={140} height={24} />
+            <Skeleton variant="rounded" width={120} height={28} />
+          </div>
+
+          <div className="grid md:grid-cols-2">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="p-6 space-y-2">
+                <Skeleton width={140} height={16} />
+                <Skeleton width="80%" height={22} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions Card */}
+        <div className="bg-white border border-gray-300 rounded-xl shadow-sm p-6">
+          <Skeleton width={160} height={22} className="mb-2" />
+          <Skeleton width="100%" height={16} className="mb-4" />
+          <Skeleton variant="rounded" width={220} height={40} />
+        </div>
+      </div>
+
+      {/* Subscription + Reports Count */}
+      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2 bg-white border border-gray-300 rounded-xl shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-300">
+            <Skeleton width={220} height={22} />
+          </div>
+
+          <div className="grid md:grid-cols-4 p-6 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i}>
+                <Skeleton width={120} height={16} />
+                <Skeleton width="80%" height={22} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-300 rounded-xl shadow-sm p-6 flex flex-col items-center">
+          <Skeleton width={200} height={20} className="mb-2" />
+          <Skeleton width={80} height={40} className="mb-2" />
+          <Skeleton width={120} height={16} />
+        </div>
+      </div>
+
+      {/* Reports Table */}
+      <div className="bg-white border border-gray-300 rounded-xl shadow-sm mt-10">
+        <div className="px-6 py-4 border-b border-gray-300">
+          <Skeleton width={240} height={22} />
+        </div>
+
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              {[...Array(3)].map((_, i) => (
+                <th key={i} className="p-6">
+                  <Skeleton width={140} height={18} />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[...Array(5)].map((_, rowIdx) => (
+              <tr key={rowIdx}>
+                {[...Array(3)].map((_, colIdx) => (
+                  <td key={colIdx} className="p-6">
+                    <Skeleton variant="rectangular" height={20} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 
 export default function CustomerDetail() {
   const { id } = useParams();
@@ -81,13 +180,14 @@ export default function CustomerDetail() {
         });
 
         /* -------- Reports -------- */
-        const normalizedReports = Array.isArray(projectReports)
-          ? projectReports.map((r) => ({
-              id: r._id,
-              date: r.createdAt ? new Date(r.createdAt).toDateString() : "—",
-              status: r.type === "draft" ? "Edited" : "New",
-            }))
-          : [];
+       const normalizedReports = Array.isArray(projectReports)
+  ? projectReports.map((r) => ({
+      id: r._id,
+      date: r.createdAt ? new Date(r.createdAt).toDateString() : "—",
+      type: r.type || "draft", // keep backend value
+    }))
+  : [];
+
 
         setReports(normalizedReports);
         setReportsCount(normalizedReports.length);
@@ -102,17 +202,25 @@ export default function CustomerDetail() {
   }, [id]);
 
   if (loading) {
-    return <div className="p-6 text-gray-500">Loading customer details…</div>;
-  }
+  return <CustomerDetailSkeleton />;
+}
+
 
   if (!customer) {
     return <div className="p-6 text-red-500">Customer not found</div>;
   }
 
+  const REPORT_TYPE_TO_STATUS = {
+  draft: "Brouillon",
+  purchase: "Complète",
+  deleted: "Supprimé",
+};
+
+
   const statusStyles = {
-    New: "bg-blue-100 px-6 text-blue-700",
-    Edited: "bg-yellow-100 px-5 text-yellow-700",
-    Deleted: "bg-gray-200 px-4 text-gray-600",
+    Complète: "bg-green-100 px-6 text-green-700",
+    Brouillon: "bg-blue-100 px-6 text-blue-700",
+    Supprimé: "bg-gray-200 px-4 text-gray-600",
   };
 
   const handleBlockUser = async () => {
@@ -149,40 +257,108 @@ export default function CustomerDetail() {
     }
   };
 
-  const handleToggleUserStatus = async () => {
-    const actionLabel = isBlocked ? "unblock" : "block";
 
-    const confirmed = window.confirm(
-      `Are you sure you want to ${actionLabel} this user?`,
+  const showConfirmToast = (message) => {
+  return new Promise((resolve) => {
+    const toastId = toast(
+      ({ closeToast }) => (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium text-gray-800">{message}</p>
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-100"
+              onClick={() => {
+                toast.dismiss(toastId);
+                resolve(false);
+              }}
+            >
+              Annuler
+            </button>
+
+            <button
+              className="px-3 py-1 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+              onClick={() => {
+                toast.dismiss(toastId);
+                resolve(true);
+              }}
+            >
+              Confirmer
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        position: "bottom-right",
+      },
+    );
+  });
+};
+
+
+ const handleToggleUserStatus = async () => {
+  const actionLabel = isBlocked ? "débloquer" : "bloquer";
+
+  const confirmed = await showConfirmToast(
+    `Êtes-vous sûr de vouloir ${actionLabel} cet utilisateur ?`,
+  );
+
+  if (!confirmed) return;
+
+  const loadingToast = toast.loading(
+    `${actionLabel === "bloquer" ? "Blocage" : "Déblocage"} en cours...`,
+  );
+
+  try {
+    setBlockLoading(true);
+
+    const res = await axios.put(
+      `https://api.emibocquillon.fr/admin/users/block/${id}`,
+      {},
+      authConfig,
     );
 
-    if (!confirmed) return;
+    if (res.data?.success) {
+      toast.update(loadingToast, {
+        render:
+          actionLabel === "bloquer"
+            ? "Utilisateur bloqué avec succès"
+            : "Utilisateur débloqué avec succès",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
 
-    try {
-      setBlockLoading(true);
-
-      const res = await axios.put(
-        `https://api.emibocquillon.fr/admin/users/block/${id}`,
-        {},
-        authConfig,
-      );
-
-      if (res.data.success) {
-        alert(`User has been ${actionLabel}ed successfully`);
-        setIsBlocked((prev) => !prev); // 🔁 toggle
-      } else {
-        alert(`Failed to ${actionLabel} user`);
-      }
-    } catch (error) {
-      console.error(`${actionLabel} user failed`, error);
-      alert(
-        error.response?.data?.message ||
-          `Unable to ${actionLabel} user. Please try again.`,
-      );
-    } finally {
-      setBlockLoading(false);
+      setIsBlocked((prev) => !prev);
+    } else {
+      toast.update(loadingToast, {
+        render:
+          res.data?.message ||
+          `Échec lors du ${actionLabel} de l'utilisateur`,
+        type: "error",
+        isLoading: false,
+        autoClose: 4000,
+      });
     }
-  };
+  } catch (error) {
+    console.error(`${actionLabel} user failed`, error);
+
+    toast.update(loadingToast, {
+      render:
+        error.response?.data?.message ||
+        `Impossible de ${actionLabel} l'utilisateur. Veuillez réessayer.`,
+      type: "error",
+      isLoading: false,
+      autoClose: 4000,
+    });
+  } finally {
+    setBlockLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -257,7 +433,7 @@ export default function CustomerDetail() {
       disabled:opacity-50"
             >
               <FaBan />
-              {blockLoading ? "Unblocking..." : "Unblock user"}
+              {blockLoading ? "Unblocking..." : "Débloquer Utilisateur"}
             </button>
           ) : (
             /* -------- BLOCK BUTTON -------- */
@@ -269,7 +445,7 @@ export default function CustomerDetail() {
       disabled:opacity-50"
             >
               <FaBan />
-              {blockLoading ? "Blocking..." : "Block user"}
+              {blockLoading ? "Blocking..." : "Bloquer Utilisateur"}
             </button>
           )}
         </div>
@@ -329,21 +505,26 @@ export default function CustomerDetail() {
             </tr>
           </thead>
           <tbody className="">
-            {reports.map((r) => (
-              <tr key={r.id} className="">
-                <td className="p-4 px-6 font-medium">{r.id}</td>
-                <td className="p-4 px-6">{r.date}</td>
-                <td className="p-4 px-6">
-                  <span
-                    className={`rounded-full text-xs py-1 ${
-                      statusStyles[r.status]
-                    }`}
-                  >
-                    {r.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
+           {reports.map((r) => {
+  const label = REPORT_TYPE_TO_STATUS[r.type] || "Inconnu";
+
+  return (
+    <tr key={r.id}>
+      <td className="p-4 px-6 font-medium">{r.id}</td>
+      <td className="p-4 px-6">{r.date}</td>
+      <td className="p-4 px-6">
+        <span
+          className={`rounded-full text-xs py-1 ${
+            statusStyles[label]
+          }`}
+        >
+          {label}
+        </span>
+      </td>
+    </tr>
+  );
+})}
+
           </tbody>
         </table>
       </div>

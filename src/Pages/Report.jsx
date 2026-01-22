@@ -6,6 +6,23 @@ import { LuArrowDownUp } from "react-icons/lu";
 import { IoIosArrowForward } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../Components/Navbar";
+import Skeleton from "@mui/material/Skeleton";
+
+const SkeletonRow = () => {
+  return (
+    <tr>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <td key={i} className="px-6 py-3">
+          <Skeleton
+            variant="rectangular"
+            height={24}
+            sx={{ borderRadius: "6px" }}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+};
 
 const PAGE_SIZE = 9;
 
@@ -24,7 +41,7 @@ const REPORT_TYPE_UI = {
     pill: "bg-green-100 text-green-700",
   },
   draft: {
-    label: "Draft",
+    label: "Brouillon",
     pill: "bg-blue-100 px-7 text-blue-700",
   },
   deleted: {
@@ -32,7 +49,6 @@ const REPORT_TYPE_UI = {
     pill: "bg-gray-200 text-gray-600",
   },
 };
-
 
 export default function Report() {
   const navigate = useNavigate();
@@ -71,7 +87,7 @@ export default function Report() {
 
       const res = await axios.get(
         "https://api.emibocquillon.fr/admin/projects/all",
-        authConfig
+        authConfig,
       );
 
       const mapped = res.data.projects.map((item) => ({
@@ -101,7 +117,7 @@ export default function Report() {
       data = data.filter(
         (r) =>
           r.customerName.toLowerCase().includes(q) ||
-          r.reportId.toLowerCase().includes(q)
+          r.reportId.toLowerCase().includes(q),
       );
     }
 
@@ -131,7 +147,6 @@ export default function Report() {
 
   // download functionality
   const handleDownload = async (report) => {
-
     if (report.type !== "purchase") return;
 
     try {
@@ -144,7 +159,7 @@ export default function Report() {
             Authorization: `Bearer ${token}`,
           },
           responseType: "blob",
-        }
+        },
       );
 
       const blob = new Blob([response.data], {
@@ -175,7 +190,7 @@ export default function Report() {
 
   const paginatedData = filteredData.slice(
     (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
+    page * PAGE_SIZE,
   );
 
   const getPages = () => {
@@ -220,7 +235,7 @@ export default function Report() {
               className="flex items-center gap-2 border border-gray-400 rounded-lg px-4 py-2"
             >
               <IoFilterOutline size={22} />
-              Filtrer 
+              Filtrer
             </button>
 
             {showFilterMenu && (
@@ -282,15 +297,10 @@ export default function Report() {
         </div>
 
         {/* ---------------- STATES ---------------- */}
-        {loading && (
-          <div className="text-center py-20 text-gray-500">
-            Loading reports...
-          </div>
-        )}
 
         {error && <div className="text-center py-20 text-red-500">{error}</div>}
 
-        {!loading && !error && (
+        { !error && (
           <>
             {/* ---------------- TABLE ---------------- */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -298,7 +308,9 @@ export default function Report() {
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
                     <th className="px-6 py-4 text-left">Nom du client</th>
-                    <th className="px-6 py-4 text-left">Identifiant du rapport</th>
+                    <th className="px-6 py-4 text-left">
+                      Identifiant du rapport
+                    </th>
                     <th className="px-6 py-4 text-left">Date de création</th>
                     <th className="px-6 py-4 text-left">Télécharger</th>
                     <th className="px-6 py-4 text-left">Report Status</th>
@@ -307,70 +319,74 @@ export default function Report() {
                 </thead>
 
                 <tbody>
-                  {paginatedData.map((row) => {
-                    const ui = STATUS_UI[row.status] || STATUS_UI.New;
+                  {loading
+                    ? Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                        <SkeletonRow key={i} />
+                      ))
+                    : paginatedData.map((row) => {
+                        const ui = STATUS_UI[row.status] || STATUS_UI.New;
 
-                    return (
-                      <tr key={row.id}>
-                        <td className="px-6 py-3">{row.customerName}</td>
-                        <td className="px-6 py-3 text-blue-600">
-                          {row.reportId}
-                        </td>
-                        <td className="px-6 py-3">
-                          {row.date.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "2-digit",
-                            year: "numeric",
-                          })}
-                        </td>
+                        return (
+                          <tr key={row.id}>
+                            <td className="px-6 py-3">{row.customerName}</td>
+                            <td className="px-6 py-3 text-blue-600">
+                              {row.reportId}
+                            </td>
+                            <td className="px-6 py-3">
+                              {row.date.toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "2-digit",
+                                year: "numeric",
+                              })}
+                            </td>
 
-                        <td className="px-6 py-3">
-                          {isDownloadAllowed(row.type) ? (
-                            <button
-                              onClick={() => handleDownload(row)}
-                              disabled={downloadingId === row.id}
-                              className="flex items-center gap-2 px-4 py-1 border rounded-full disabled:opacity-50"
-                            >
-                              <FaDownload />
-                              {downloadingId === row.id
-                                ? "Télécharger..."
-                                : "Télécharger"}
-                            </button>
-                          ) : (
-                            <span className="px-5 py-1.5 border rounded-full text-gray-400 cursor-not-allowed">
-                              Unavailable
-                            </span>
-                          )}
-                        </td>
+                            <td className="px-6 py-3">
+                              {isDownloadAllowed(row.type) ? (
+                                <button
+                                  onClick={() => handleDownload(row)}
+                                  disabled={downloadingId === row.id}
+                                  className="flex items-center gap-2 px-4 py-1 border rounded-full disabled:opacity-50"
+                                >
+                                  <FaDownload />
+                                  {downloadingId === row.id
+                                    ? "Télécharger..."
+                                    : "Télécharger"}
+                                </button>
+                              ) : (
+                                <span className="px-5 py-1.5 border rounded-full text-gray-400 cursor-not-allowed">
+                                  Indisponible
+                                </span>
+                              )}
+                            </td>
 
-                        <td className="px-6 py-3">
-                          {(() => {
-                            const reportType =
-                              REPORT_TYPE_UI[row.type] || REPORT_TYPE_UI.draft;
+                            <td className="px-6 py-3">
+                              {(() => {
+                                const reportType =
+                                  REPORT_TYPE_UI[row.type] ||
+                                  REPORT_TYPE_UI.draft;
 
-                            return (
-                              <span
-                                className={`px-4 py-1 rounded-full text-xs font-medium ${reportType.pill}`}
+                                return (
+                                  <span
+                                    className={`px-4 py-1 rounded-full text-xs font-medium ${reportType.pill}`}
+                                  >
+                                    {reportType.label}
+                                  </span>
+                                );
+                              })()}
+                            </td>
+
+                            <td className="px-6 py-3">
+                              <button
+                                onClick={() =>
+                                  navigate(`/user/report-detail/${row.id}`)
+                                }
                               >
-                                {reportType.label}
-                              </span>
-                            );
-                          })()}
-                        </td>
-
-                       
-                        <td className="px-6 py-3">
-                          <button
-                            onClick={() =>
-                              navigate(`/user/report-detail/${row.id}`)
-                            }
-                          >
-                            <IoIosArrowForward />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                                <IoIosArrowForward />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                 </tbody>
               </table>
             </div>
@@ -382,7 +398,7 @@ export default function Report() {
                 onClick={() => setPage(page - 1)}
                 className="px-3 py-1 disabled:text-gray-400"
               >
-                ← Previous
+                ← Précédent
               </button>
 
               {getPages().map((p, i) =>
@@ -400,7 +416,7 @@ export default function Report() {
                   >
                     {p}
                   </button>
-                )
+                ),
               )}
 
               <button
@@ -408,7 +424,7 @@ export default function Report() {
                 onClick={() => setPage(page + 1)}
                 className="px-3 py-1 disabled:text-gray-400"
               >
-                Next →
+                suivant →
               </button>
             </div>
           </>

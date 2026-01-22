@@ -13,6 +13,9 @@ import {
 } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../../Components/Navbar";
+import { toast } from "react-toastify";
+import Skeleton from "@mui/material/Skeleton";
+
 
 const REPORT_TYPE_UI = {
   purchase: {
@@ -32,6 +35,60 @@ const REPORT_TYPE_UI = {
   },
 };
 
+const ReportDetailSkeleton = () => {
+  return (
+    <div>
+      <Navbar heading="Gestion des rapports" />
+
+      <div className="min-h-screen bg-gray-50 p-6 mt-5">
+        {/* Back Button */}
+        <div className="mb-4">
+          <Skeleton width={160} height={22} />
+        </div>
+
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <Skeleton width={240} height={32} />
+
+          <div className="flex gap-3">
+            <Skeleton variant="rounded" width={140} height={36} />
+            <Skeleton variant="rounded" width={180} height={36} />
+          </div>
+        </div>
+
+        {/* General Info Card */}
+        <div className="bg-white rounded-xl shadow-sm mb-6">
+          <div className="px-6 py-4 border-b border-gray-300">
+            <Skeleton width={220} height={22} />
+            <Skeleton width={360} height={16} className="mt-1" />
+          </div>
+
+          <div className="grid md:grid-cols-2">
+            {/* Left */}
+            <div className="p-6 border-r border-gray-300 space-y-6">
+              {[...Array(2)].map((_, i) => (
+                <div key={i}>
+                  <Skeleton width={180} height={16} className="mb-2" />
+                  <Skeleton width="80%" height={22} />
+                </div>
+              ))}
+            </div>
+
+            {/* Right */}
+            <div className="p-6 space-y-6">
+              {[...Array(2)].map((_, i) => (
+                <div key={i}>
+                  <Skeleton width={180} height={16} className="mb-2" />
+                  <Skeleton width="60%" height={22} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 
 export default function ReportDetail() {
@@ -79,12 +136,56 @@ export default function ReportDetail() {
   const getReportTypeUI = (type) =>
     REPORT_TYPE_UI[type] || REPORT_TYPE_UI.draft;
 
-  /* ---------------- DOWNLOAD ---------------- */
-  const handleDownload = async () => {
+ 
+
+const showConfirmToast = (message) => {
+  return new Promise((resolve) => {
+    const toastId = toast(
+      () => (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium text-gray-800">{message}</p>
+
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-100"
+              onClick={() => {
+                toast.dismiss(toastId);
+                resolve(false);
+              }}
+            >
+              Annuler
+            </button>
+
+            <button
+              className="px-3 py-1 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+              onClick={() => {
+                toast.dismiss(toastId);
+                resolve(true);
+              }}
+            >
+              Confirmer
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        position: "top-center",
+      }
+    );
+  });
+};
+
+ /* ---------------- DOWNLOAD ---------------- */
+const handleDownload = async () => {
   if (!project || project.type !== "purchase") {
-    alert("This report is not available for download.");
+    toast.info("Ce rapport n’est pas disponible au téléchargement.");
     return;
   }
+
+  const loadingToast = toast.loading("Préparation du téléchargement...");
 
   try {
     setDownloading(true);
@@ -111,53 +212,91 @@ export default function ReportDetail() {
 
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+
+    toast.update(loadingToast, {
+      render: "Téléchargement terminé avec succès",
+      type: "success",
+      isLoading: false,
+      autoClose: 3000,
+    });
   } catch (err) {
     console.error(err);
-    alert("Failed to download report");
+
+    toast.update(loadingToast, {
+      render:
+        err.response?.data?.message ||
+        "Échec du téléchargement du rapport",
+      type: "error",
+      isLoading: false,
+      autoClose: 4000,
+    });
   } finally {
     setDownloading(false);
   }
 };
 
 
+
+
   // delete report
   const handleDeleteReport = async () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this report? This action cannot be undone."
+  const confirmed = await showConfirmToast(
+    "Êtes-vous sûr de vouloir supprimer ce rapport ? Cette action est irréversible."
+  );
+
+  if (!confirmed) return;
+
+  const loadingToast = toast.loading("Suppression du rapport...");
+
+  try {
+    setDeleting(true);
+
+    const res = await axios.post(
+      `https://api.emibocquillon.fr/api/project/soft-delete/${id}`,
+      {},
+      authConfig
     );
 
-    if (!confirmed) return;
+    if (res.data?.success !== false) {
+      toast.update(loadingToast, {
+        render: "Rapport supprimé avec succès",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
 
-    try {
-      setDeleting(true);
-
-      await axios.post(
-        `https://api.emibocquillon.fr/api/project/soft-delete/${id}`,
-        {},
-        authConfig
-      );
-
-      alert("Report deleted successfully");
-
-      // Navigate back to reports list
-      navigate("/user/report"); // adjust route if needed
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete report");
-    } finally {
-      setDeleting(false);
+      navigate("/user/report");
+    } else {
+      toast.update(loadingToast, {
+        render:
+          res.data?.message || "Échec de la suppression du rapport",
+        type: "error",
+        isLoading: false,
+        autoClose: 4000,
+      });
     }
-  };
+  } catch (err) {
+    console.error(err);
+
+    toast.update(loadingToast, {
+      render:
+        err.response?.data?.message ||
+        "Impossible de supprimer le rapport. Veuillez réessayer.",
+      type: "error",
+      isLoading: false,
+      autoClose: 3000,
+    });
+  } finally {
+    setDeleting(false);
+  }
+};
+
 
   /* ---------------- STATES ---------------- */
-  if (loading) {
-    return (
-      <div>
-        <Navbar heading="Report Management" />
-        <div className="p-10 text-center text-gray-500">Loading report...</div>
-      </div>
-    );
-  }
+if (loading) {
+  return <ReportDetailSkeleton />;
+}
+
 
   if (error) {
     return (
@@ -209,10 +348,10 @@ export default function ReportDetail() {
                   icon={<FaDownload />}
                   label={
                     downloading
-                      ? "Downloading..."
+                      ? "Télécharger..."
                       : typeUI.canDownload
-                      ? "Download"
-                      : "Unavailable"
+                      ? "Télécharger"
+                      : "Indisponible"
                   }
                   className={
                     typeUI.canDownload
@@ -227,7 +366,7 @@ export default function ReportDetail() {
 
             <ActionButton
               icon={<FaTrash />}
-              label={deleting ? "Deleting..." : "Delete Report"}
+              label={deleting ? "Deleting..." : "Supprimer Rapport"}
               className="bg-red-200 text-red-700"
               onClick={handleDeleteReport}
               disabled={deleting}

@@ -11,6 +11,36 @@ import Navbar from "../Components/Navbar";
 import RichTextEditor from "../Components/RichTextEditor";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+import { toast } from "react-toastify";
+import Skeleton from "@mui/material/Skeleton";
+
+const TabsSkeleton = () => (
+  <div className="flex gap-3 mb-6">
+    {[1, 2, 3].map((i) => (
+      <Skeleton key={i} variant="rounded" width={180} height={40} />
+    ))}
+  </div>
+);
+
+const EditorSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton variant="rounded" height={320} />
+    <div className="flex justify-end">
+      <Skeleton variant="rounded" width={200} height={40} />
+    </div>
+  </div>
+);
+
+const VideoSkeleton = () => (
+  <div className="space-y-6">
+    <Skeleton variant="rounded" height={40} />
+    <Skeleton variant="rounded" height={300} />
+    <div className="flex justify-end gap-3">
+      <Skeleton variant="rounded" width={120} height={40} />
+      <Skeleton variant="rounded" width={160} height={40} />
+    </div>
+  </div>
+);
 
 export default function CMS() {
   const [activeTab, setActiveTab] = useState("terms");
@@ -45,7 +75,7 @@ export default function CMS() {
 
         const res = await axios.get(
           "https://api.emibocquillon.fr/api/content/get",
-          authConfig
+          authConfig,
         );
         console.log(res);
         if (res.data?.success) {
@@ -59,7 +89,7 @@ export default function CMS() {
 
             if (res.data?.videoDetails?.streamUrl) {
               setVideoPreview(
-                `https://api.emibocquillon.fr${res.data.videoDetails.streamUrl}`
+                `https://api.emibocquillon.fr${res.data.videoDetails.streamUrl}`,
               );
             }
           }
@@ -116,20 +146,32 @@ export default function CMS() {
 
   // ---------------- SAVE TERMS ----------------
   const saveTerms = async () => {
+    const loadingToast = toast.loading("Enregistrement des conditions...");
+
     try {
       setSaving(true);
-      setMessage("");
 
       await axios.post(
         "https://api.emibocquillon.fr/api/content/terms-and-conditions",
         { termsAndConditions: termsContent },
-        authConfig
+        authConfig,
       );
 
-      setMessage("Terms & Conditions saved successfully.");
+      toast.update(loadingToast, {
+        render: "Conditions enregistrées avec succès",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error(err);
-      setMessage("Failed to save Terms & Conditions.");
+
+      toast.update(loadingToast, {
+        render: "Échec de l'enregistrement des conditions",
+        type: "error",
+        isLoading: false,
+        autoClose: 4000,
+      });
     } finally {
       setSaving(false);
     }
@@ -137,20 +179,34 @@ export default function CMS() {
 
   // ---------------- SAVE PRIVACY ----------------
   const savePrivacy = async () => {
+    const loadingToast = toast.loading(
+      "Enregistrement de la politique de confidentialité...",
+    );
+
     try {
       setSaving(true);
-      setMessage("");
 
       await axios.post(
         "https://api.emibocquillon.fr/api/content/privacy-policy",
         { privacyPolicy: privacyContent },
-        authConfig
+        authConfig,
       );
 
-      setMessage("Privacy Policy saved successfully.");
+      toast.update(loadingToast, {
+        render: "Politique de confidentialité enregistrée avec succès",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error(err);
-      setMessage("Failed to save Privacy Policy.");
+
+      toast.update(loadingToast, {
+        render: "Échec de l'enregistrement de la politique de confidentialité",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
     } finally {
       setSaving(false);
     }
@@ -158,14 +214,15 @@ export default function CMS() {
 
   // ---------------- SAVE VIDEO ----------------
   const saveVideo = async () => {
-    try {
-      if (!videoFile) {
-        setMessage("Please upload a video first.");
-        return;
-      }
+    if (!videoFile) {
+      toast.warning("Veuillez d'abord uploader une vidéo");
+      return;
+    }
 
+    const loadingToast = toast.loading("Téléversement de la vidéo...");
+
+    try {
       setSaving(true);
-      setMessage("");
 
       const formData = new FormData();
       formData.append("title", videoTitle);
@@ -178,13 +235,24 @@ export default function CMS() {
         authConfig,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
 
-      setMessage("Tutorial video uploaded successfully.");
+      toast.update(loadingToast, {
+        render: "Vidéo tutorielle téléversée avec succès",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error(err);
-      setMessage("Failed to upload video.");
+
+      toast.update(loadingToast, {
+        render: "Échec du téléversement de la vidéo",
+        type: "error",
+        isLoading: false,
+        autoClose: 4000,
+      });
     } finally {
       setSaving(false);
     }
@@ -199,15 +267,15 @@ export default function CMS() {
      }`;
 
   // ---------------- FULL SCREEN LOADER ----------------
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-lg font-semibold animate-pulse">
-          Loading CMS content...
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center bg-gray-100">
+  //       <div className="text-lg font-semibold animate-pulse">
+  //         Loading CMS content...
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div>
@@ -221,192 +289,196 @@ export default function CMS() {
           </div>
         )}
 
+      
         {/* TABS */}
-        <div className="flex gap-3 mb-6">
-          <button
-            onClick={() => setActiveTab("terms")}
-            className={tabClass("terms")}
-          >
-            <FaListUl /> Conditions générales 
-          </button>
-          <button
-            onClick={() => setActiveTab("privacy")}
-            className={tabClass("privacy")}
-          >
-            <FaLock /> Politique de confidentialité 
-          </button>
-          <button
-            onClick={() => setActiveTab("video")}
-            className={tabClass("video")}
-          >
-            <FaEnvelope /> Gestion des tutoriels
-          </button>
+        {loading ? (
+          <TabsSkeleton />
+        ) : (
+          <div className="flex gap-3 mb-6">
+            <button
+              onClick={() => setActiveTab("terms")}
+              className={tabClass("terms")}
+            >
+              <FaListUl /> Conditions générales
+            </button>
+            <button
+              onClick={() => setActiveTab("privacy")}
+              className={tabClass("privacy")}
+            >
+              <FaLock /> Politique de confidentialité
+            </button>
+            <button
+              onClick={() => setActiveTab("video")}
+              className={tabClass("video")}
+            >
+              <FaEnvelope /> Gestion des tutoriels
+            </button>
+          </div>
+        )}
+
+
+       <div className="bg-white rounded-lg p-6">
+
+  {/* CONTENT SKELETON */}
+  {loading ? (
+    <>
+      {activeTab === "terms" && <EditorSkeleton />}
+      {activeTab === "privacy" && <EditorSkeleton />}
+      {activeTab === "video" && <VideoSkeleton />}
+    </>
+  ) : (
+    <>
+      {/* TERMS */}
+      {activeTab === "terms" && (
+        <div className="space-y-4">
+          <CKEditor
+            editor={ClassicEditor}
+            data={termsContent}
+            onChange={(event, editor) => {
+              setTermsContent(editor.getData());
+            }}
+            config={{
+              toolbar: [
+                "bold",
+                "italic",
+                "link",
+                "|",
+                "numberedList",
+                "|",
+                "undo",
+                "redo",
+              ],
+            }}
+          />
+
+          <div className="w-full flex justify-end">
+            <button
+              onClick={saveTerms}
+              disabled={saving}
+              className={`px-5 py-2 rounded-full text-white ${
+                saving ? "bg-gray-400" : "bg-green-900"
+              }`}
+            >
+              {saving ? "Saving..." : "Enregistrer les conditions"}
+            </button>
+          </div>
         </div>
+      )}
 
-        <div className="bg-white rounded-lg p-6">
-          {/* TERMS */}
-          {activeTab === "terms" && (
-            <div className="space-y-4">
-              {/* <textarea
-                className="w-full h-[430px] border border-gray-400 rounded-md p-3 text-sm"
-                value={termsContent}
-                onChange={(e) => setTermsContent(e.target.value)}
-              /> */}
-              <CKEditor
-                editor={ClassicEditor}
-                data={termsContent}
-                onChange={(event, editor) => {
-                  setTermsContent(editor.getData());
-                }}
-                config={{
-                  toolbar: [
-                    
-                    "bold",
-                    "italic",
-                    "link",
-                    "|",
-                    
-                    "numberedList",
-                    "|",
-                    "undo",
-                    "redo",
-                  ],
-                }}
-              />
+      {/* PRIVACY */}
+      {activeTab === "privacy" && (
+        <div className="space-y-4">
+          <CKEditor
+            editor={ClassicEditor}
+            data={privacyContent}
+            onChange={(event, editor) => {
+              setPrivacyContent(editor.getData());
+            }}
+            config={{
+              toolbar: [
+                "bold",
+                "italic",
+                "link",
+                "|",
+                "numberedList",
+                "|",
+                "undo",
+                "redo",
+              ],
+            }}
+          />
 
-              <div className="w-full flex justify-end">
+          <div className="w-full flex justify-end">
+            <button
+              onClick={savePrivacy}
+              disabled={saving}
+              className={`px-5 py-2 rounded-full text-white ${
+                saving ? "bg-gray-400" : "bg-green-900"
+              }`}
+            >
+              {saving ? "Saving..." : "Enregistrer la confidentialité"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* VIDEO */}
+      {activeTab === "video" && (
+        <div className="space-y-6">
+          <input
+            value={videoTitle}
+            onChange={(e) => setVideoTitle(e.target.value)}
+            className="w-full border border-gray-400 rounded-md px-3 py-2 text-sm"
+            placeholder="Tutorial video title"
+          />
+
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            className="border-2 border-dashed rounded-lg p-8 text-center"
+          >
+            {!videoPreview ? (
+              <>
+                <FaFileAlt className="text-5xl text-gray-300 mb-3 mx-auto" />
                 <button
-                  onClick={saveTerms}
-                  disabled={saving}
-                  className={`px-5 py-2 rounded-full text-white ${
-                    saving ? "bg-gray-400" : "bg-green-900"
-                  }`}
+                  onClick={() => fileRef.current.click()}
+                  className="border px-4 py-2 rounded-full"
                 >
-                  {saving ? "Saving..." : "Enregistrer les conditions "}
+                  <FaUpload className="inline mr-2" /> Upload Video
                 </button>
-              </div>
-            </div>
-          )}
-
-          {/* PRIVACY */}
-          {activeTab === "privacy" && (
-            <div className="space-y-4">
-              {/* <textarea
-                className="w-full h-[430px] border border-gray-400 rounded-md p-3 text-sm"
-                value={privacyContent}
-                onChange={(e) => setPrivacyContent(e.target.value)}
-              /> */}
-
-               <CKEditor
-                editor={ClassicEditor}
-                data={privacyContent}
-                onChange={(event, editor) => {
-                  setPrivacyContent(editor.getData());
-                }}
-                config={{
-                  toolbar: [
-                   
-                    "bold",
-                    "italic",
-                    "link",
-                    "|",
-                   
-                    "numberedList",
-                    "|",
-                    "undo",
-                    "redo",
-                  ],
-                }}
-              />
-
-              <div className="w-full flex justify-end">
-                <button
-                  onClick={savePrivacy}
-                  disabled={saving}
-                  className={`px-5 py-2 rounded-full text-white ${
-                    saving ? "bg-gray-400" : "bg-green-900"
-                  }`}
-                >
-                  {saving ? "Saving..." : "Save Privacy"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* VIDEO */}
-          {activeTab === "video" && (
-            <div className="space-y-6">
-              <input
-                value={videoTitle}
-                onChange={(e) => setVideoTitle(e.target.value)}
-                className="w-full border border-gray-400 rounded-md px-3 py-2 text-sm"
-                placeholder="Tutorial video title"
-              />
-
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                className="border-2 border-dashed rounded-lg p-8 text-center "
-              >
-                {!videoPreview ? (
-                  <>
-                    <FaFileAlt className="text-5xl text-gray-300 mb-3 mx-auto" />
-                    <button
-                      onClick={() => fileRef.current.click()}
-                      className="border px-4 py-2 rounded-full"
-                    >
-                      <FaUpload className="inline mr-2" /> Upload Video
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p className="mb-2">
-                      {videoFile ? videoFile.name : "Existing uploaded video"}
-                    </p>
-                    <video
-                      controls
-                      src={videoPreview}
-                      className="w-full h-96 rounded-lg"
-                    />
-                  </>
-                )}
-
-                <input
-                  ref={fileRef}
-                  type="file"
-                  hidden
-                  accept="video/*"
-                  onChange={(e) => handleFileSelect(e.target.files[0])}
+              </>
+            ) : (
+              <>
+                <p className="mb-2">
+                  {videoFile ? videoFile.name : "Existing uploaded video"}
+                </p>
+                <video
+                  controls
+                  src={videoPreview}
+                  className="w-full h-96 rounded-lg"
                 />
-              </div>
+              </>
+            )}
 
-              <div className="w-full flex justify-end gap-3">
-                {videoPreview && (
-                  <button
-                    type="button"
-                    onClick={clearVideo}
-                    disabled={saving}
-                    className="px-5 py-2 rounded-full border border-red-500 text-red-600 hover:bg-red-50"
-                  >
-                    Clear
-                  </button>
-                )}
+            <input
+              ref={fileRef}
+              type="file"
+              hidden
+              accept="video/*"
+              onChange={(e) => handleFileSelect(e.target.files[0])}
+            />
+          </div>
 
-                <button
-                  onClick={saveVideo}
-                  disabled={saving}
-                  className={`px-5 py-2 rounded-full text-white ${
-                    saving ? "bg-gray-400" : "bg-green-900"
-                  }`}
-                >
-                  {saving ? "Uploading..." : "Save Video"}
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="w-full flex justify-end gap-3">
+            {videoPreview && (
+              <button
+                type="button"
+                onClick={clearVideo}
+                disabled={saving}
+                className="px-5 py-2 rounded-full border border-red-500 text-red-600 hover:bg-red-50"
+              >
+                Clear
+              </button>
+            )}
+
+            <button
+              onClick={saveVideo}
+              disabled={saving}
+              className={`px-5 py-2 rounded-full text-white ${
+                saving ? "bg-gray-400" : "bg-green-900"
+              }`}
+            >
+              {saving ? "Uploading..." : "Enregistrer la vidéo"}
+            </button>
+          </div>
         </div>
+      )}
+    </>
+  )}
+</div>
 
-        {message && <p className="mt-3 text-sm font-medium">{message}</p>}
+
+        
       </div>
     </div>
   );
