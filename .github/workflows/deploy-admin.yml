@@ -1,4 +1,4 @@
-name: Deploy Admin Panel (Server Pull)
+name: Deploy Admin Panel (Stable Production)
 
 on:
   push:
@@ -14,42 +14,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy Admin Panel via SSH
+      # 1️⃣ Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2️⃣ Use Node 20 (matches your app)
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 3️⃣ Install deps (safe on GitHub runner)
+      - name: Install dependencies
+        run: npm ci
+
+      # 4️⃣ Build admin panel
+      - name: Build admin panel
+        run: npm run build
+
+      # 5️⃣ Upload build to server
+      - name: Upload build to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/*"
+          target: "/var/www/dev-app/admin-panel/current"
+
+      # 6️⃣ Reload Nginx
+      - name: Reload Nginx
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
           script: |
-            set -e
-
-            echo "🚀 Deploying Admin Panel..."
-
-            # 1️⃣ Go to admin panel repo
-            cd /var/www/dev-app/admin-panel/jytechinvestment-admin
-
-            echo "🧹 Cleaning repo state"
-            git reset --hard origin/main
-            git clean -fd
-
-            echo "📥 Pulling latest code"
-            git pull origin main
-
-
-            echo "📦 Installing dependencies"
-            npm install
-
-            echo "🏗️ Building admin panel"
-            npm run build
-
-            echo "🧹 Cleaning old admin build"
-            rm -rf /var/www/dev-app/admin-panel/current/*
-
-            echo "📁 Copying new build"
-            cp -r dist/* /var/www/dev-app/admin-panel/current/
-
-            echo "♻️ Reloading Nginx"
             sudo systemctl reload nginx
-
-            echo "✅ Admin Panel Deployment Completed"
+            echo "✅ Admin Panel Deployed Successfully"
