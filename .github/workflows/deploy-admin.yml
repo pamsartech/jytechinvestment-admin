@@ -14,26 +14,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Node (matches app)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # 4️⃣ Build admin panel
       - name: Build admin panel
         run: npm run build
 
-      # 5️⃣ Upload build to NEW release folder (NOT current)
       - name: Upload build to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -43,7 +38,6 @@ jobs:
           source: "dist/*"
           target: "/var/www/dev-app/admin-panel/releases/${{ github.sha }}/dist"
 
-      # 6️⃣ Activate release atomically
       - name: Activate release
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -52,12 +46,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-
             BASE="/var/www/dev-app/admin-panel"
-            RELEASE="$BASE/releases/${{ github.sha }}/dist"
-            CURRENT="$BASE/current"
-
-            ln -sfn "$RELEASE" "$CURRENT"
+            ln -sfn "$BASE/releases/${{ github.sha }}/dist" "$BASE/current"
             sudo systemctl reload nginx
-
             echo "✅ Admin Panel Deployed Successfully"
