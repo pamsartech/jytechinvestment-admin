@@ -360,7 +360,7 @@ export default function CustomersTable() {
           <thead className="bg-gray-50 text-[#616F89]">
             <tr>
               <th className="p-4 text-left">Nom d’utilisateur </th>
-              <th className="p-4 text-left">Emai</th>
+              <th className="p-4 text-left">mail</th>
               <th className="p-4 text-left">Numéro de téléphone </th>
               <th className="p-4 text-left">Date d’inscription</th>
               <th className="p-4 text-left">Rôle</th>
