@@ -29,8 +29,13 @@ jobs:
             # 1️⃣ Go to admin panel repo
             cd /var/www/dev-app/admin-panel/jytechinvestment-admin
 
+            echo "🧹 Cleaning repo state"
+            git reset --hard origin/main
+            git clean -fd
+
             echo "📥 Pulling latest code"
             git pull origin main
+
 
             echo "📦 Installing dependencies"
             npm install
