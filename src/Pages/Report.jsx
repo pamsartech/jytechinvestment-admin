@@ -324,10 +324,10 @@ export default function Report() {
             {showSortMenu && (
               <div className="absolute right-0 mt-2 w-52 bg-white border p-1 rounded-lg shadow-md z-10">
                 {[
-                  ["report-asc", "Report ID (A–Z)"],
-                  ["report-desc", "Report ID (Z–A)"],
-                  ["date-new", "Date Created (Newest)"],
-                  ["date-old", "Date Created (Oldest)"],
+                  ["report-asc", "Identifiant du rapport (A–Z)"],
+                  ["report-desc", "Identifiant du rapport (Z–A)"],
+                  ["date-new", "Date de création (plus récents)"],
+                  ["date-old", "Date de création (plus anciens)"],
                 ].map(([value, label]) => (
                   <button
                     key={value}

@@ -45,6 +45,20 @@ const UsersTableSkeleton = () => (
 
 const PAGE_SIZE = 9;
 
+
+const FILTER_LABELS = {
+  All: "Tous",
+  Active: "Actif",
+  Inactive: "Inactif",
+  Blocked: "Bloqué",
+};
+
+const SORT_LABELS = {
+  "name-asc": "Nom (A–Z)",
+  "date-desc": "Les plus récents",
+};
+
+
 export default function CustomersTable() {
   const [users, setUsers] = useState([]); // ← API DATA
   const [loading, setLoading] = useState(false);
@@ -385,27 +399,29 @@ export default function CustomersTable() {
             }`}
           >
             <IoFilterOutline className="text-gray-500" size={22} />
-            <span className="text-sm font-medium">
-              {statusFilter === "All" ? "Filtrer" : statusFilter}
-            </span>
+           <span className="text-sm font-medium">
+  {statusFilter === "All" ? "Filtrer" : FILTER_LABELS[statusFilter]}
+</span>
+
           </button>
 
           {isFilterOpen && (
             <div className="absolute right-0 mt-2 p-3 w-40 bg-white border border-gray-300 rounded-lg shadow-lg z-20">
-              {["All", "Active", "Inactive", "Blocked"].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => {
-                    setStatusFilter(status);
-                    setIsFilterOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                    statusFilter === status ? "bg-gray-50 font-medium" : ""
-                  }`}
-                >
-                  {status}
-                </button>
-              ))}
+            {["All", "Active", "Inactive", "Blocked"].map((status) => (
+  <button
+    key={status}
+    onClick={() => {
+      setStatusFilter(status);
+      setIsFilterOpen(false);
+    }}
+    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+      statusFilter === status ? "bg-gray-50 font-medium" : ""
+    }`}
+  >
+    {FILTER_LABELS[status]}
+  </button>
+))}
+
             </div>
           )}
         </div>
@@ -422,50 +438,48 @@ export default function CustomersTable() {
             }`}
           >
             <LuArrowDownUp className="text-gray-400" size={20} />
-            <span className="text-sm font-medium">
-              {sortBy === "name-asc"
-                ? "Name (A–Z)"
-                : sortBy === "date-desc"
-                  ? "Newest"
-                  : "Trier "}
-            </span>
+           <span className="text-sm font-medium">
+  {sortBy ? SORT_LABELS[sortBy] : "Trier"}
+</span>
+
           </button>
 
           {isSortOpen && (
             <div className="absolute right-0 mt-2 p-3 w-44 bg-white border border-gray-300 rounded-lg shadow-lg z-20">
-              <button
-                onClick={() => {
-                  setSortBy("name-asc");
-                  setIsSortOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                  sortBy === "name-asc" ? "bg-gray-50 font-medium" : ""
-                }`}
-              >
-                Username (A–Z)
-              </button>
+             <button
+  onClick={() => {
+    setSortBy("name-asc");
+    setIsSortOpen(false);
+  }}
+  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+    sortBy === "name-asc" ? "bg-gray-50 font-medium" : ""
+  }`}
+>
+  Nom d’utilisateur (A–Z)
+</button>
 
-              <button
-                onClick={() => {
-                  setSortBy("date-desc");
-                  setIsSortOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
-                  sortBy === "date-desc" ? "bg-gray-50 font-medium" : ""
-                }`}
-              >
-                Registration date
-              </button>
+<button
+  onClick={() => {
+    setSortBy("date-desc");
+    setIsSortOpen(false);
+  }}
+  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+    sortBy === "date-desc" ? "bg-gray-50 font-medium" : ""
+  }`}
+>
+  Date d’inscription
+</button>
 
-              <button
-                onClick={() => {
-                  setSortBy(null);
-                  setIsSortOpen(false);
-                }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-gray-50"
-              >
-                Clear sort
-              </button>
+<button
+  onClick={() => {
+    setSortBy(null);
+    setIsSortOpen(false);
+  }}
+  className="w-full text-left px-4 py-2 text-sm text-gray-500 hover:bg-gray-50"
+>
+  Réinitialiser le tri
+</button>
+
             </div>
           )}
         </div>

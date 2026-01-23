@@ -85,6 +85,23 @@ const SUBSCRIPTION_UI = {
   },
 };
 
+/* ---------------- FILTER + SORT LABELS (FR) ---------------- */
+
+const FILTER_STATUS_LABELS = {
+  All: "Tous",
+  Paid: "Payé",
+  Pending: "En attente",
+  Failed: "Échoué",
+  Refunded: "Remboursé",
+};
+
+const SORT_LABELS = {
+  "date-desc": "Date (plus récents)",
+  "date-asc": "Date (plus anciens)",
+  "amount-desc": "Montant (élevé → faible)",
+  "amount-asc": "Montant (faible → élevé)",
+};
+
 export default function Payments() {
   const navigate = useNavigate();
 
@@ -218,6 +235,32 @@ export default function Payments() {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  const getPageNumbers = () => {
+    const pages = [];
+
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (page <= 4) {
+        pages.push(1, 2, 3, 4, 5, "...", totalPages);
+      } else if (page >= totalPages - 3) {
+        pages.push(
+          1,
+          "...",
+          totalPages - 4,
+          totalPages - 3,
+          totalPages - 2,
+          totalPages - 1,
+          totalPages,
+        );
+      } else {
+        pages.push(1, "...", page - 1, page, page + 1, "...", totalPages);
+      }
+    }
+
+    return pages;
+  };
+
   return (
     <div>
       <Navbar heading="Gestion des paiements " />
@@ -245,7 +288,9 @@ export default function Payments() {
               className="flex items-center gap-2 border border-gray-400 rounded-lg px-4 py-2"
             >
               <IoFilterOutline className="text-gray-500" size={22} />
-              Filtrer
+              {statusFilter === "All"
+                ? "Filtrer"
+                : FILTER_STATUS_LABELS[statusFilter]}
             </button>
 
             {showFilter && (
@@ -262,7 +307,7 @@ export default function Payments() {
                       statusFilter === s ? "bg-gray-100 font-medium" : ""
                     }`}
                   >
-                    {s}
+                    {FILTER_STATUS_LABELS[s]}
                   </button>
                 ))}
               </div>
@@ -276,30 +321,27 @@ export default function Payments() {
               className="flex items-center gap-2 border border-gray-400 rounded-lg px-4 py-2"
             >
               <LuArrowDownUp className="text-gray-400" size={20} />
-              Trier
+              {SORT_LABELS[sort] || "Trier"}
             </button>
 
             {showSort && (
               <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow w-52 z-10">
-                {[
-                  ["date-desc", "Date (Newest)"],
-                  ["date-asc", "Date (Oldest)"],
-                  ["amount-desc", "Amount (High → Low)"],
-                  ["amount-asc", "Amount (Low → High)"],
-                ].map(([v, l]) => (
-                  <button
-                    key={v}
-                    onClick={() => {
-                      setSort(v);
-                      setShowSort(false);
-                    }}
-                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                      sort === v ? "bg-gray-100 font-medium" : ""
-                    }`}
-                  >
-                    {l}
-                  </button>
-                ))}
+                {["date-desc", "date-asc", "amount-desc", "amount-asc"].map(
+                  (v) => (
+                    <button
+                      key={v}
+                      onClick={() => {
+                        setSort(v);
+                        setShowSort(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                        sort === v ? "bg-gray-100 font-medium" : ""
+                      }`}
+                    >
+                      {SORT_LABELS[v]}
+                    </button>
+                  ),
+                )}
               </div>
             )}
           </div>
@@ -409,26 +451,54 @@ export default function Payments() {
         )}
 
         {/* PAGINATION */}
+        {/* PAGINATION */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-6 text-sm">
+          <div className="flex justify-center items-center gap-2 mt-8 text-sm select-none">
+            {/* PREVIOUS */}
             <button
               disabled={page === 1}
               onClick={() => setPage(page - 1)}
-              className="px-3 py-1 disabled:text-gray-400"
+              className={`px-4 py-2 rounded-lg border ${
+                page === 1
+                  ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                  : "border-gray-400 hover:bg-gray-100"
+              }`}
             >
-              ← Précédent
+              ‹ Précédent
             </button>
 
-            <span className="px-4">
-              Page {page} of {totalPages}
-            </span>
+            {/* PAGE NUMBERS */}
+            {getPageNumbers().map((p, index) =>
+              p === "..." ? (
+                <span key={index} className="px-3 py-2">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`px-4 py-2 rounded-lg border ${
+                    page === p
+                      ? "bg-black text-white border-black"
+                      : "border-gray-400 hover:bg-gray-100"
+                  }`}
+                >
+                  {p}
+                </button>
+              ),
+            )}
 
+            {/* NEXT */}
             <button
               disabled={page === totalPages}
               onClick={() => setPage(page + 1)}
-              className="px-3 py-1 disabled:text-gray-400"
+              className={`px-4 py-2 rounded-lg border ${
+                page === totalPages
+                  ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                  : "border-gray-400 hover:bg-gray-100"
+              }`}
             >
-              Suivant →
+              Suivant ›
             </button>
           </div>
         )}
