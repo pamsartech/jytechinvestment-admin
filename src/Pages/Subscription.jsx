@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Navbar from "../Components/Navbar";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 
 export default function Subscription() {
   const [activeTab, setActiveTab] = useState("plus");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
 
   const token = localStorage.getItem("token");
 
@@ -15,6 +18,29 @@ export default function Subscription() {
       Authorization: `Bearer ${token}`,
     },
   };
+
+  useEffect(() => {
+  if (!token) {
+    toast.error("Votre session a expiré. Veuillez vous reconnecter.");
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
+  }
+}, [token, navigate]);
+
+
+const handleAuthError = (error) => {
+  const status = error?.response?.status;
+
+  if (status === 401 || status === 403) {
+    localStorage.removeItem("token");
+    toast.error("Session expirée. Veuillez vous reconnecter.");
+    navigate("/login", { replace: true });
+    return true;
+  }
+
+  return false;
+};
+
 
   /* ================= PLUS PLAN STATE (UNCHANGED) ================= */
   const [planName, setPlanName] = useState("");
@@ -113,9 +139,14 @@ export default function Subscription() {
         setActualPrice(yearly?.actualPrice ?? "")
 
       }
-    } catch (error) {
-      console.error("Failed to fetch plans", error);
-    }
+   } catch (error) {
+  console.error("Failed to fetch plans", error);
+
+  if (handleAuthError(error)) return;
+
+  toast.error("Impossible de charger les plans.");
+}
+
   };
 
   fetchPlans();

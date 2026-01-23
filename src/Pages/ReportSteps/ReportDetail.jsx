@@ -109,6 +109,29 @@ export default function ReportDetail() {
     },
   };
 
+  useEffect(() => {
+  if (!token) {
+    toast.error("Votre session a expiré. Veuillez vous reconnecter.");
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
+  }
+}, [token, navigate]);
+
+
+const handleAuthError = (error) => {
+  const status = error?.response?.status;
+
+  if (status === 401 || status === 403) {
+    localStorage.removeItem("token");
+    toast.error("Session expirée. Veuillez vous reconnecter.");
+    navigate("/login", { replace: true });
+    return true;
+  }
+
+  return false;
+};
+
+
   /* ---------------- FETCH PROJECT ---------------- */
   useEffect(() => {
     fetchProject();
@@ -126,9 +149,13 @@ export default function ReportDetail() {
 
       setProject(res.data.project);
     } catch (err) {
-      console.error(err);
-      setError("Failed to load report details.");
-    } finally {
+  console.error(err);
+
+  if (handleAuthError(err)) return;
+
+  setError("Failed to load report details.");
+}
+ finally {
       setLoading(false);
     }
   };
@@ -220,17 +247,23 @@ const handleDownload = async () => {
       autoClose: 3000,
     });
   } catch (err) {
-    console.error(err);
+  console.error(err);
 
-    toast.update(loadingToast, {
-      render:
-        err.response?.data?.message ||
-        "Échec du téléchargement du rapport",
-      type: "error",
-      isLoading: false,
-      autoClose: 4000,
-    });
-  } finally {
+  if (handleAuthError(err)) {
+    toast.dismiss(loadingToast);
+    return;
+  }
+
+  toast.update(loadingToast, {
+    render:
+      err.response?.data?.message ||
+      "Échec du téléchargement du rapport",
+    type: "error",
+    isLoading: false,
+    autoClose: 4000,
+  });
+}
+ finally {
     setDownloading(false);
   }
 };
@@ -276,17 +309,23 @@ const handleDownload = async () => {
       });
     }
   } catch (err) {
-    console.error(err);
+  console.error(err);
 
-    toast.update(loadingToast, {
-      render:
-        err.response?.data?.message ||
-        "Impossible de supprimer le rapport. Veuillez réessayer.",
-      type: "error",
-      isLoading: false,
-      autoClose: 3000,
-    });
-  } finally {
+  if (handleAuthError(err)) {
+    toast.dismiss(loadingToast);
+    return;
+  }
+
+  toast.update(loadingToast, {
+    render:
+      err.response?.data?.message ||
+      "Impossible de supprimer le rapport. Veuillez réessayer.",
+    type: "error",
+    isLoading: false,
+    autoClose: 3000,
+  });
+}
+ finally {
     setDeleting(false);
   }
 };
@@ -332,7 +371,7 @@ if (loading) {
           className="flex items-center gap-2 text-sm text-gray-600 mb-4"
         >
           <FaArrowLeft />
-          Back to reports
+         Retour à la liste des rapports
         </button>
 
         {/* HEADER */}

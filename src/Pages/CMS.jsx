@@ -8,11 +8,11 @@ import {
   FaFileAlt,
 } from "react-icons/fa";
 import Navbar from "../Components/Navbar";
-import RichTextEditor from "../Components/RichTextEditor";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import { toast } from "react-toastify";
 import Skeleton from "@mui/material/Skeleton";
+import { useNavigate } from "react-router-dom";
 
 const TabsSkeleton = () => (
   <div className="flex gap-3 mb-6">
@@ -44,6 +44,7 @@ const VideoSkeleton = () => (
 
 export default function CMS() {
   const [activeTab, setActiveTab] = useState("terms");
+  const navigate = useNavigate();
 
   const [termsContent, setTermsContent] = useState("");
   const [privacyContent, setPrivacyContent] = useState("");
@@ -65,6 +66,27 @@ export default function CMS() {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  };
+
+  useEffect(() => {
+    if (!token) {
+      toast.error("Votre session a expiré. Veuillez vous reconnecter.");
+      localStorage.removeItem("token");
+      navigate("/login", { replace: true });
+    }
+  }, [token, navigate]);
+
+  const handleAuthError = (error) => {
+    const status = error?.response?.status;
+
+    if (status === 401 || status === 403) {
+      localStorage.removeItem("token");
+      toast.error("Session expirée. Veuillez vous reconnecter.");
+      navigate("/login", { replace: true });
+      return true;
+    }
+
+    return false;
   };
 
   // ---------------- LOAD INITIAL CONTENT ----------------
@@ -96,6 +118,9 @@ export default function CMS() {
         }
       } catch (err) {
         console.error(err);
+
+        if (handleAuthError(err)) return;
+
         setMessage("Failed to load CMS content.");
       } finally {
         setLoading(false);
@@ -267,15 +292,6 @@ export default function CMS() {
      }`;
 
   // ---------------- FULL SCREEN LOADER ----------------
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-  //       <div className="text-lg font-semibold animate-pulse">
-  //         Loading CMS content...
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   return (
     <div>
@@ -289,7 +305,6 @@ export default function CMS() {
           </div>
         )}
 
-      
         {/* TABS */}
         {loading ? (
           <TabsSkeleton />
@@ -316,169 +331,166 @@ export default function CMS() {
           </div>
         )}
 
+        <div className="bg-white rounded-lg p-6">
+          {/* CONTENT SKELETON */}
+          {loading ? (
+            <>
+              {activeTab === "terms" && <EditorSkeleton />}
+              {activeTab === "privacy" && <EditorSkeleton />}
+              {activeTab === "video" && <VideoSkeleton />}
+            </>
+          ) : (
+            <>
+              {/* TERMS */}
+              {activeTab === "terms" && (
+                <div className="space-y-4">
+                  <CKEditor
+                    editor={ClassicEditor}
+                    data={termsContent}
+                    onChange={(event, editor) => {
+                      setTermsContent(editor.getData());
+                    }}
+                    config={{
+                      toolbar: [
+                        "bold",
+                        "italic",
+                        "link",
+                        "|",
+                        "numberedList",
+                        "|",
+                        "undo",
+                        "redo",
+                      ],
+                    }}
+                  />
 
-       <div className="bg-white rounded-lg p-6">
+                  <div className="w-full flex justify-end">
+                    <button
+                      onClick={saveTerms}
+                      disabled={saving}
+                      className={`px-5 py-2 rounded-full text-white ${
+                        saving ? "bg-gray-400" : "bg-green-900"
+                      }`}
+                    >
+                      {saving ? "Saving..." : "Enregistrer les conditions"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
-  {/* CONTENT SKELETON */}
-  {loading ? (
-    <>
-      {activeTab === "terms" && <EditorSkeleton />}
-      {activeTab === "privacy" && <EditorSkeleton />}
-      {activeTab === "video" && <VideoSkeleton />}
-    </>
-  ) : (
-    <>
-      {/* TERMS */}
-      {activeTab === "terms" && (
-        <div className="space-y-4">
-          <CKEditor
-            editor={ClassicEditor}
-            data={termsContent}
-            onChange={(event, editor) => {
-              setTermsContent(editor.getData());
-            }}
-            config={{
-              toolbar: [
-                "bold",
-                "italic",
-                "link",
-                "|",
-                "numberedList",
-                "|",
-                "undo",
-                "redo",
-              ],
-            }}
-          />
+              {/* PRIVACY */}
+              {activeTab === "privacy" && (
+                <div className="space-y-4">
+                  <CKEditor
+                    editor={ClassicEditor}
+                    data={privacyContent}
+                    onChange={(event, editor) => {
+                      setPrivacyContent(editor.getData());
+                    }}
+                    config={{
+                      toolbar: [
+                        "bold",
+                        "italic",
+                        "link",
+                        "|",
+                        "numberedList",
+                        "|",
+                        "undo",
+                        "redo",
+                      ],
+                    }}
+                  />
 
-          <div className="w-full flex justify-end">
-            <button
-              onClick={saveTerms}
-              disabled={saving}
-              className={`px-5 py-2 rounded-full text-white ${
-                saving ? "bg-gray-400" : "bg-green-900"
-              }`}
-            >
-              {saving ? "Saving..." : "Enregistrer les conditions"}
-            </button>
-          </div>
+                  <div className="w-full flex justify-end">
+                    <button
+                      onClick={savePrivacy}
+                      disabled={saving}
+                      className={`px-5 py-2 rounded-full text-white ${
+                        saving ? "bg-gray-400" : "bg-green-900"
+                      }`}
+                    >
+                      {saving ? "Saving..." : "Enregistrer la confidentialité"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* VIDEO */}
+              {activeTab === "video" && (
+                <div className="space-y-6">
+                  <input
+                    value={videoTitle}
+                    onChange={(e) => setVideoTitle(e.target.value)}
+                    className="w-full border border-gray-400 rounded-md px-3 py-2 text-sm"
+                    placeholder="Tutorial video title"
+                  />
+
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleDrop}
+                    className="border-2 border-dashed rounded-lg p-8 text-center"
+                  >
+                    {!videoPreview ? (
+                      <>
+                        <FaFileAlt className="text-5xl text-gray-300 mb-3 mx-auto" />
+                        <button
+                          onClick={() => fileRef.current.click()}
+                          className="border px-4 py-2 rounded-full"
+                        >
+                          <FaUpload className="inline mr-2" /> Upload Video
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="mb-2">
+                          {videoFile
+                            ? videoFile.name
+                            : "Existing uploaded video"}
+                        </p>
+                        <video
+                          controls
+                          src={videoPreview}
+                          className="w-full h-96 rounded-lg"
+                        />
+                      </>
+                    )}
+
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      hidden
+                      accept="video/*"
+                      onChange={(e) => handleFileSelect(e.target.files[0])}
+                    />
+                  </div>
+
+                  <div className="w-full flex justify-end gap-3">
+                    {videoPreview && (
+                      <button
+                        type="button"
+                        onClick={clearVideo}
+                        disabled={saving}
+                        className="px-5 py-2 rounded-full border border-red-500 text-red-600 hover:bg-red-50"
+                      >
+                        Clear
+                      </button>
+                    )}
+
+                    <button
+                      onClick={saveVideo}
+                      disabled={saving}
+                      className={`px-5 py-2 rounded-full text-white ${
+                        saving ? "bg-gray-400" : "bg-green-900"
+                      }`}
+                    >
+                      {saving ? "Uploading..." : "Enregistrer la vidéo"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
-
-      {/* PRIVACY */}
-      {activeTab === "privacy" && (
-        <div className="space-y-4">
-          <CKEditor
-            editor={ClassicEditor}
-            data={privacyContent}
-            onChange={(event, editor) => {
-              setPrivacyContent(editor.getData());
-            }}
-            config={{
-              toolbar: [
-                "bold",
-                "italic",
-                "link",
-                "|",
-                "numberedList",
-                "|",
-                "undo",
-                "redo",
-              ],
-            }}
-          />
-
-          <div className="w-full flex justify-end">
-            <button
-              onClick={savePrivacy}
-              disabled={saving}
-              className={`px-5 py-2 rounded-full text-white ${
-                saving ? "bg-gray-400" : "bg-green-900"
-              }`}
-            >
-              {saving ? "Saving..." : "Enregistrer la confidentialité"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* VIDEO */}
-      {activeTab === "video" && (
-        <div className="space-y-6">
-          <input
-            value={videoTitle}
-            onChange={(e) => setVideoTitle(e.target.value)}
-            className="w-full border border-gray-400 rounded-md px-3 py-2 text-sm"
-            placeholder="Tutorial video title"
-          />
-
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-            className="border-2 border-dashed rounded-lg p-8 text-center"
-          >
-            {!videoPreview ? (
-              <>
-                <FaFileAlt className="text-5xl text-gray-300 mb-3 mx-auto" />
-                <button
-                  onClick={() => fileRef.current.click()}
-                  className="border px-4 py-2 rounded-full"
-                >
-                  <FaUpload className="inline mr-2" /> Upload Video
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="mb-2">
-                  {videoFile ? videoFile.name : "Existing uploaded video"}
-                </p>
-                <video
-                  controls
-                  src={videoPreview}
-                  className="w-full h-96 rounded-lg"
-                />
-              </>
-            )}
-
-            <input
-              ref={fileRef}
-              type="file"
-              hidden
-              accept="video/*"
-              onChange={(e) => handleFileSelect(e.target.files[0])}
-            />
-          </div>
-
-          <div className="w-full flex justify-end gap-3">
-            {videoPreview && (
-              <button
-                type="button"
-                onClick={clearVideo}
-                disabled={saving}
-                className="px-5 py-2 rounded-full border border-red-500 text-red-600 hover:bg-red-50"
-              >
-                Clear
-              </button>
-            )}
-
-            <button
-              onClick={saveVideo}
-              disabled={saving}
-              className={`px-5 py-2 rounded-full text-white ${
-                saving ? "bg-gray-400" : "bg-green-900"
-              }`}
-            >
-              {saving ? "Uploading..." : "Enregistrer la vidéo"}
-            </button>
-          </div>
-        </div>
-      )}
-    </>
-  )}
-</div>
-
-
-        
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import { IoIosArrowForward } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../Components/Navbar";
 import Skeleton from "@mui/material/Skeleton";
+import { toast } from "react-toastify";
 
 const TableSkeleton = ({ rows = 9 }) => {
   return (
@@ -43,7 +44,6 @@ const TableSkeleton = ({ rows = 9 }) => {
     </div>
   );
 };
-
 
 /* ---------------- CONFIG ---------------- */
 const PAGE_SIZE = 9;
@@ -108,6 +108,27 @@ export default function Payments() {
     },
   };
 
+  useEffect(() => {
+    if (!token) {
+      toast.error("Votre session a expiré. Veuillez vous reconnecter.");
+      localStorage.removeItem("token");
+      navigate("/login", { replace: true });
+    }
+  }, [token, navigate]);
+
+  const handleAuthError = (error) => {
+    const status = error?.response?.status;
+
+    if (status === 401 || status === 403) {
+      localStorage.removeItem("token");
+      toast.error("Session expirée. Veuillez vous reconnecter.");
+      navigate("/login", { replace: true });
+      return true;
+    }
+
+    return false;
+  };
+
   /* ---------------- FETCH DATA ---------------- */
   useEffect(() => {
     fetchPayments();
@@ -156,6 +177,9 @@ export default function Payments() {
       setRows(mapped);
     } catch (err) {
       console.error(err);
+
+      if (handleAuthError(err)) return;
+
       setError("Failed to load payments.");
     } finally {
       setLoading(false);
@@ -221,7 +245,7 @@ export default function Payments() {
               className="flex items-center gap-2 border border-gray-400 rounded-lg px-4 py-2"
             >
               <IoFilterOutline className="text-gray-500" size={22} />
-              Filtrer 
+              Filtrer
             </button>
 
             {showFilter && (
@@ -252,7 +276,7 @@ export default function Payments() {
               className="flex items-center gap-2 border border-gray-400 rounded-lg px-4 py-2"
             >
               <LuArrowDownUp className="text-gray-400" size={20} />
-              Trier 
+              Trier
             </button>
 
             {showSort && (
@@ -282,8 +306,7 @@ export default function Payments() {
         </div>
 
         {/* STATES */}
-      {loading && <TableSkeleton rows={PAGE_SIZE} />}
-
+        {loading && <TableSkeleton rows={PAGE_SIZE} />}
 
         {error && <div className="text-center py-10 text-red-500">{error}</div>}
 
@@ -296,10 +319,16 @@ export default function Payments() {
                   <th className="px-6 py-4 text-left">Montant</th>
                   <th className="px-6 py-4 text-center">Statut </th>
                   <th className="px-6 py-4 text-left">Email</th>
-                  <th className="px-6 py-4 w-42 text-left">ID de transaction</th>
-                  <th className="px-6 py-4 w-46 text-left">Subscription Status</th>
+                  <th className="px-6 py-4 w-42 text-left">
+                    ID de transaction
+                  </th>
+                  <th className="px-6 py-4 w-46 text-left">
+                    Subscription Status
+                  </th>
                   <th className="px-6 py-4 w-36 text-center">Date</th>
-                  <th className="px-3 py-4 w-40 text-left">Moyen de paiement </th>
+                  <th className="px-3 py-4 w-40 text-left">
+                    Moyen de paiement{" "}
+                  </th>
                   <th className="px-6 py-4 w-2 text-left">Action</th>
                 </tr>
               </thead>
@@ -322,7 +351,9 @@ export default function Payments() {
                       </td>
 
                       <td className="px-6 py-4 text-gray-600">{row.email}</td>
-                      <td className="px-6 py-4 text-gray-600 text-center">{row.id}</td>
+                      <td className="px-6 py-4 text-gray-600 text-center">
+                        {row.id}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         {(() => {
                           const ui =
@@ -349,7 +380,9 @@ export default function Payments() {
                           // minute: "2-digit",
                         })}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 text-center">{row.method}</td>
+                      <td className="px-6 py-4 text-gray-600 text-center">
+                        {row.method}
+                      </td>
                       <td className="px-6 py-4 text-center">
                         <button
                           onClick={() =>
@@ -395,7 +428,7 @@ export default function Payments() {
               onClick={() => setPage(page + 1)}
               className="px-3 py-1 disabled:text-gray-400"
             >
-              Suivant  →
+              Suivant →
             </button>
           </div>
         )}

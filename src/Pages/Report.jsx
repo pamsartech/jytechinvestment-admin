@@ -7,6 +7,7 @@ import { IoIosArrowForward } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../Components/Navbar";
 import Skeleton from "@mui/material/Skeleton";
+import { toast } from "react-toastify";
 
 const SkeletonRow = () => {
   return (
@@ -25,15 +26,6 @@ const SkeletonRow = () => {
 };
 
 const PAGE_SIZE = 9;
-
-const STATUS_UI = {
-  // Deleted: { pill: "bg-gray-200 px-2 py-2 text-gray-700", downloadable: false },
-  New: { pill: "bg-blue-100 text px-6 py-2 blue-700", downloadable: true },
-  Edited: {
-    pill: "bg-yellow-100 px-5 py-2 text-yellow-700",
-    downloadable: true,
-  },
-};
 
 const REPORT_TYPE_UI = {
   purchase: {
@@ -54,10 +46,10 @@ export default function Report() {
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
 
-  const [sortOption, setSortOption] = useState("report-asc");
+  const [sortOption, setSortOption] = useState("none");
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
 
@@ -73,6 +65,27 @@ export default function Report() {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  };
+
+  useEffect(() => {
+    if (!token) {
+      toast.error("Votre session a expiré. Veuillez vous reconnecter.");
+      localStorage.removeItem("token");
+      navigate("/login", { replace: true });
+    }
+  }, [token, navigate]);
+
+  const handleAuthError = (error) => {
+    const status = error?.response?.status;
+
+    if (status === 401 || status === 403) {
+      localStorage.removeItem("token");
+      toast.error("Session expirée. Veuillez vous reconnecter.");
+      navigate("/login", { replace: true });
+      return true;
+    }
+
+    return false;
   };
 
   /* ---------------- FETCH DATA ---------------- */
@@ -94,15 +107,17 @@ export default function Report() {
         id: item._id,
         customerName: item.userName,
         reportId: item._id,
-        type: item.type,
+        type: item.type, // purchase | draft | deleted
         date: new Date(item.createdAt),
-        status: item.status || "New",
       }));
 
       setReports(mapped);
     } catch (err) {
       console.error(err);
-      setError("Failed to load reports.");
+
+      if (handleAuthError(err)) return;
+
+      setError("Échec du chargement des rapports.");
     } finally {
       setLoading(false);
     }
@@ -121,24 +136,26 @@ export default function Report() {
       );
     }
 
-    if (statusFilter !== "All") {
-      data = data.filter((r) => r.status === statusFilter);
+    if (statusFilter !== "all") {
+      data = data.filter((r) => r.type === statusFilter);
     }
 
-    data.sort((a, b) => {
-      switch (sortOption) {
-        case "report-asc":
-          return a.reportId.localeCompare(b.reportId);
-        case "report-desc":
-          return b.reportId.localeCompare(a.reportId);
-        case "date-new":
-          return b.date - a.date;
-        case "date-old":
-          return a.date - b.date;
-        default:
-          return 0;
-      }
-    });
+    if (sortOption !== "none") {
+      data.sort((a, b) => {
+        switch (sortOption) {
+          case "report-asc":
+            return a.reportId.localeCompare(b.reportId);
+          case "report-desc":
+            return b.reportId.localeCompare(a.reportId);
+          case "date-new":
+            return b.date - a.date;
+          case "date-old":
+            return a.date - b.date;
+          default:
+            return 0;
+        }
+      });
+    }
 
     return data;
   }, [reports, search, statusFilter, sortOption]);
@@ -193,18 +210,46 @@ export default function Report() {
     page * PAGE_SIZE,
   );
 
-  const getPages = () => {
-    const pages = [];
-    if (totalPages <= 6) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      pages.push(1, 2, 3);
-      if (page > 4) pages.push("…");
-      if (page > 3 && page < totalPages - 2) pages.push(page);
-      if (page < totalPages - 3) pages.push("…");
-      pages.push(totalPages - 1, totalPages);
+  // const getPages = () => {
+  //   const pages = [];
+  //   if (totalPages <= 6) {
+  //     for (let i = 1; i <= totalPages; i++) pages.push(i);
+  //   } else {
+  //     pages.push(1, 2, 3);
+  //     if (page > 4) pages.push("…");
+  //     if (page > 3 && page < totalPages - 2) pages.push(page);
+  //     if (page < totalPages - 3) pages.push("…");
+  //     pages.push(totalPages - 1, totalPages);
+  //   }
+  //   return [...new Set(pages)];
+  // };
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages || 1);
     }
-    return [...new Set(pages)];
+  }, [totalPages, page]);
+
+  const getVisiblePages = () => {
+    const delta = 1; // how many pages on each side
+    const pages = [];
+
+    let start = Math.max(1, page - delta);
+    let end = Math.min(totalPages, page + delta);
+
+    // Ensure at least 3 buttons are shown when possible
+    if (page === 1) {
+      end = Math.min(totalPages, 3);
+    }
+    if (page === totalPages) {
+      start = Math.max(1, totalPages - 2);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
   };
 
   return (
@@ -240,19 +285,26 @@ export default function Report() {
 
             {showFilterMenu && (
               <div className="absolute right-0 mt-2 w-40 bg-white border p-1 rounded-lg shadow-md z-10">
-                {["All", "New", "Edited", "Deleted"].map((status) => (
+                {[
+                  { value: "all", label: "Tous" },
+                  { value: "purchase", label: "Complète" },
+                  { value: "draft", label: "Brouillon" },
+                  { value: "deleted", label: "Supprimé" },
+                ].map((opt) => (
                   <button
-                    key={status}
+                    key={opt.value}
                     onClick={() => {
-                      setStatusFilter(status);
+                      setStatusFilter(opt.value);
                       setShowFilterMenu(false);
                       setPage(1);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                      statusFilter === status ? "bg-gray-100 font-medium" : ""
+                      statusFilter === opt.value
+                        ? "bg-gray-100 font-medium"
+                        : ""
                     }`}
                   >
-                    {status === "All" ? "All status" : status}
+                    {opt.label}
                   </button>
                 ))}
               </div>
@@ -300,7 +352,7 @@ export default function Report() {
 
         {error && <div className="text-center py-20 text-red-500">{error}</div>}
 
-        { !error && (
+        {!error && (
           <>
             {/* ---------------- TABLE ---------------- */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -324,7 +376,7 @@ export default function Report() {
                         <SkeletonRow key={i} />
                       ))
                     : paginatedData.map((row) => {
-                        const ui = STATUS_UI[row.status] || STATUS_UI.New;
+                        // const ui = STATUS_UI[row.status] || STATUS_UI.New;
 
                         return (
                           <tr key={row.id}>
@@ -392,39 +444,73 @@ export default function Report() {
             </div>
 
             {/* ---------------- PAGINATION ---------------- */}
-            <div className="flex justify-center items-center gap-2 mt-6 text-sm">
+            {/* ---------------- PAGINATION ---------------- */}
+            <div className="flex justify-center items-center gap-2 mt-8 text-sm select-none">
+              {/* Previous */}
               <button
                 disabled={page === 1}
-                onClick={() => setPage(page - 1)}
-                className="px-3 py-1 disabled:text-gray-400"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className={`px-4 py-2 border rounded-lg ${
+                  page === 1
+                    ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                    : "hover:bg-gray-100"
+                }`}
               >
-                ← Précédent
+                ‹ Précédent
               </button>
 
-              {getPages().map((p, i) =>
-                p === "…" ? (
-                  <span key={i} className="px-2">
-                    …
-                  </span>
-                ) : (
+              {/* First page shortcut */}
+              {page > 2 && (
+                <>
                   <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    className={`px-3 py-1 rounded ${
-                      page === p ? "bg-black text-white" : "hover:bg-gray-200"
-                    }`}
+                    onClick={() => setPage(1)}
+                    className="px-4 py-2 border border-gray-500 rounded-lg hover:bg-gray-100"
                   >
-                    {p}
+                    1
                   </button>
-                ),
+                  {page > 3 && <span className="px-2">…</span>}
+                </>
               )}
 
+              {/* Middle pages */}
+              {getVisiblePages().map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`px-4 py-2 rounded-lg border ${
+                    page === p
+                      ? "bg-black text-white border-gray-500"
+                      : "hover:bg-gray-100"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+
+              {/* Last page shortcut */}
+              {page < totalPages - 1 && (
+                <>
+                  {page < totalPages - 2 && <span className="px-2">…</span>}
+                  <button
+                    onClick={() => setPage(totalPages)}
+                    className="px-4 py-2 border border-gray-500 rounded-lg hover:bg-gray-100"
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+
+              {/* Next */}
               <button
                 disabled={page === totalPages}
-                onClick={() => setPage(page + 1)}
-                className="px-3 py-1 disabled:text-gray-400"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className={`px-4 py-2 border border-gray-500 rounded-lg ${
+                  page === totalPages || totalPages === 0
+                    ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                    : "hover:bg-gray-100"
+                }`}
               >
-                suivant →
+                suivant ›
               </button>
             </div>
           </>

@@ -14,6 +14,7 @@ import {
 } from "react-icons/fa";
 import Navbar from "../../Components/Navbar";
 import Skeleton from "@mui/material/Skeleton";
+import { toast } from "react-toastify";
 
 const PaymentDetailsSkeleton = () => {
   return (
@@ -68,7 +69,6 @@ const PaymentDetailsSkeleton = () => {
   );
 };
 
-
 export default function PaymentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -85,6 +85,27 @@ export default function PaymentDetails() {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  };
+
+  useEffect(() => {
+    if (!token) {
+      toast.error("Votre session a expiré. Veuillez vous reconnecter.");
+      localStorage.removeItem("token");
+      navigate("/login", { replace: true });
+    }
+  }, [token, navigate]);
+
+  const handleAuthError = (error) => {
+    const status = error?.response?.status;
+
+    if (status === 401 || status === 403) {
+      localStorage.removeItem("token");
+      toast.error("Session expirée. Veuillez vous reconnecter.");
+      navigate("/login", { replace: true });
+      return true;
+    }
+
+    return false;
   };
 
   /* ---------------- FETCH PAYMENT DETAILS ---------------- */
@@ -106,6 +127,9 @@ export default function PaymentDetails() {
       setUser(res.data.userDetails);
     } catch (err) {
       console.error(err);
+
+      if (handleAuthError(err)) return;
+
       setError("Failed to load payment details.");
     } finally {
       setLoading(false);
@@ -113,10 +137,9 @@ export default function PaymentDetails() {
   };
 
   /* ---------------- LOADING / ERROR ---------------- */
- if (loading) {
-  return <PaymentDetailsSkeleton />;
-}
-
+  if (loading) {
+    return <PaymentDetailsSkeleton />;
+  }
 
   if (error) {
     return (
@@ -143,7 +166,7 @@ export default function PaymentDetails() {
           className="flex items-center gap-2 text-sm text-gray-600 mb-4"
         >
           <FaArrowLeft />
-          Back to Payments
+            Retour à la liste des paiements
         </button>
 
         <h1 className="text-xl font-semibold mb-6">Détails du paiement</h1>

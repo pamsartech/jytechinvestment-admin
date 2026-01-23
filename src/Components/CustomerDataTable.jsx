@@ -9,6 +9,7 @@ import { LuArrowDownUp } from "react-icons/lu";
 import { IoIosArrowForward } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@mui/material";
+import { toast } from "react-toastify";
 
 const UsersTableSkeleton = () => (
   <div className="bg-white border border-gray-200 rounded-2xl mt-8 p-2 overflow-hidden">
@@ -42,7 +43,6 @@ const UsersTableSkeleton = () => (
   </div>
 );
 
-
 const PAGE_SIZE = 9;
 
 export default function CustomersTable() {
@@ -75,6 +75,30 @@ export default function CustomersTable() {
     },
   };
 
+  useEffect(() => {
+    if (!token) {
+      toast.error("Votre session a expiré. Veuillez vous reconnecter.");
+      localStorage.removeItem("token");
+
+      navigate("/login", { replace: true });
+    }
+  }, [token, navigate]);
+
+  const handleAuthError = (error) => {
+    const status = error?.response?.status;
+
+    if (status === 401 || status === 403) {
+      localStorage.removeItem("token");
+
+      toast.error("Session expirée. Veuillez vous reconnecter.");
+
+      navigate("/login", { replace: true });
+      return true;
+    }
+
+    return false;
+  };
+
   // invite user
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) {
@@ -103,15 +127,27 @@ export default function CustomersTable() {
     } catch (error) {
       console.error("Invite user failed:", error);
 
-      // ERROR RESPONSE MESSAGE (from backend)
-      if (error.response?.data?.message) {
-        alert(error.response.data.message);
-      } else {
-        alert("Something went wrong while sending the invite");
-      }
+      if (handleAuthError(error)) return;
+
+      toast.error(
+        error.response?.data?.message ||
+          "Une erreur s’est produite lors de l’envoi de l’invitation",
+      );
     } finally {
       setInviteLoading(false);
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString("en-US", {
+      month: "short", // Jan
+      day: "2-digit", // 22
+      year: "numeric", // 2026
+    });
   };
 
   /* ----------------------------------
@@ -140,13 +176,10 @@ export default function CustomersTable() {
           username: u.userName || "—",
           email: u.Email || "—",
           phone: u.PhoneNumber || "—",
-          date: u.createdAt
-            ? new Date(u.createdAt).toISOString().split("T")[0]
-            : "—",
 
-          // ✅ NEW: role directly from API
+          date: formatDate(u.createdAt),
+
           role: u.role || "user",
-
           status:
             u.isActive === "active"
               ? "Active"
@@ -158,7 +191,12 @@ export default function CustomersTable() {
         setUsers(normalized);
       } catch (err) {
         console.error("Fetch users error:", err);
-        setError(err.response?.data?.message || "Failed to load users");
+
+        if (handleAuthError(err)) return;
+
+        setError(
+          err.response?.data?.message || "Échec du chargement des utilisateurs",
+        );
       } finally {
         setLoading(false);
       }
@@ -236,39 +274,38 @@ export default function CustomersTable() {
   /* ----------------------------------
      RENDER
   -----------------------------------*/
- if (loading) {
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Top Controls stay visible */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <Skeleton variant="rectangular" width={140} height={42} />
-        <Skeleton variant="rectangular" width={320} height={42} />
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        {/* Top Controls stay visible */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <Skeleton variant="rectangular" width={140} height={42} />
+          <Skeleton variant="rectangular" width={320} height={42} />
+        </div>
+
+        <div className="flex flex-wrap gap-3 mb-4">
+          <Skeleton variant="rectangular" width="100%" height={48} />
+          <Skeleton variant="rectangular" width={140} height={48} />
+          <Skeleton variant="rectangular" width={140} height={48} />
+        </div>
+
+        <UsersTableSkeleton />
+
+        {/* Pagination Skeleton */}
+        <div className="flex justify-center items-center gap-2 mt-8">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton
+              key={i}
+              variant="rectangular"
+              width={36}
+              height={36}
+              sx={{ borderRadius: 8 }}
+            />
+          ))}
+        </div>
       </div>
-
-      <div className="flex flex-wrap gap-3 mb-4">
-        <Skeleton variant="rectangular" width="100%" height={48} />
-        <Skeleton variant="rectangular" width={140} height={48} />
-        <Skeleton variant="rectangular" width={140} height={48} />
-      </div>
-
-      <UsersTableSkeleton />
-
-      {/* Pagination Skeleton */}
-      <div className="flex justify-center items-center gap-2 mt-8">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton
-            key={i}
-            variant="rectangular"
-            width={36}
-            height={36}
-            sx={{ borderRadius: 8 }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
+    );
+  }
 
   if (error) {
     return <div className="p-6 text-red-600">{error}</div>;

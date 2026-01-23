@@ -5,7 +5,6 @@ import { FaArrowLeft, FaBan } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Skeleton from "@mui/material/Skeleton";
 
-
 const USER_STATUS_UI = {
   active: {
     label: "Utilisateur Actif",
@@ -112,7 +111,6 @@ const CustomerDetailSkeleton = () => {
   );
 };
 
-
 export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -134,6 +132,27 @@ export default function CustomerDetail() {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  };
+
+  useEffect(() => {
+    if (!token) {
+      toast.error("Votre session a expiré. Veuillez vous reconnecter.");
+      localStorage.removeItem("token");
+      navigate("/login", { replace: true });
+    }
+  }, [token, navigate]);
+
+  const handleAuthError = (error) => {
+    const status = error?.response?.status;
+
+    if (status === 401 || status === 403) {
+      localStorage.removeItem("token");
+      toast.error("Session expirée. Veuillez vous reconnecter.");
+      navigate("/login", { replace: true });
+      return true;
+    }
+
+    return false;
   };
 
   useEffect(() => {
@@ -180,19 +199,20 @@ export default function CustomerDetail() {
         });
 
         /* -------- Reports -------- */
-       const normalizedReports = Array.isArray(projectReports)
-  ? projectReports.map((r) => ({
-      id: r._id,
-      date: r.createdAt ? new Date(r.createdAt).toDateString() : "—",
-      type: r.type || "draft", // keep backend value
-    }))
-  : [];
-
+        const normalizedReports = Array.isArray(projectReports)
+          ? projectReports.map((r) => ({
+              id: r._id,
+              date: r.createdAt ? new Date(r.createdAt).toDateString() : "—",
+              type: r.type || "draft", // keep backend value
+            }))
+          : [];
 
         setReports(normalizedReports);
         setReportsCount(normalizedReports.length);
       } catch (err) {
         console.error("Failed to load customer detail", err);
+
+        if (handleAuthError(err)) return;
       } finally {
         setLoading(false);
       }
@@ -202,20 +222,18 @@ export default function CustomerDetail() {
   }, [id]);
 
   if (loading) {
-  return <CustomerDetailSkeleton />;
-}
-
+    return <CustomerDetailSkeleton />;
+  }
 
   if (!customer) {
     return <div className="p-6 text-red-500">Customer not found</div>;
   }
 
   const REPORT_TYPE_TO_STATUS = {
-  draft: "Brouillon",
-  purchase: "Complète",
-  deleted: "Supprimé",
-};
-
+    draft: "Brouillon",
+    purchase: "Complète",
+    deleted: "Supprimé",
+  };
 
   const statusStyles = {
     Complète: "bg-green-100 px-6 text-green-700",
@@ -257,108 +275,110 @@ export default function CustomerDetail() {
     }
   };
 
-
   const showConfirmToast = (message) => {
-  return new Promise((resolve) => {
-    const toastId = toast(
-      ({ closeToast }) => (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium text-gray-800">{message}</p>
+    return new Promise((resolve) => {
+      const toastId = toast(
+        ({ closeToast }) => (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm font-medium text-gray-800">{message}</p>
 
-          <div className="flex justify-end gap-2">
-            <button
-              className="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-100"
-              onClick={() => {
-                toast.dismiss(toastId);
-                resolve(false);
-              }}
-            >
-              Annuler
-            </button>
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-100"
+                onClick={() => {
+                  toast.dismiss(toastId);
+                  resolve(false);
+                }}
+              >
+                Annuler
+              </button>
 
-            <button
-              className="px-3 py-1 text-sm rounded bg-red-600 text-white hover:bg-red-700"
-              onClick={() => {
-                toast.dismiss(toastId);
-                resolve(true);
-              }}
-            >
-              Confirmer
-            </button>
+              <button
+                className="px-3 py-1 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+                onClick={() => {
+                  toast.dismiss(toastId);
+                  resolve(true);
+                }}
+              >
+                Confirmer
+              </button>
+            </div>
           </div>
-        </div>
-      ),
-      {
-        autoClose: false,
-        closeOnClick: false,
-        draggable: false,
-        position: "bottom-right",
-      },
-    );
-  });
-};
+        ),
+        {
+          autoClose: false,
+          closeOnClick: false,
+          draggable: false,
+          position: "bottom-right",
+        },
+      );
+    });
+  };
 
+  const handleToggleUserStatus = async () => {
+    const actionLabel = isBlocked ? "débloquer" : "bloquer";
 
- const handleToggleUserStatus = async () => {
-  const actionLabel = isBlocked ? "débloquer" : "bloquer";
-
-  const confirmed = await showConfirmToast(
-    `Êtes-vous sûr de vouloir ${actionLabel} cet utilisateur ?`,
-  );
-
-  if (!confirmed) return;
-
-  const loadingToast = toast.loading(
-    `${actionLabel === "bloquer" ? "Blocage" : "Déblocage"} en cours...`,
-  );
-
-  try {
-    setBlockLoading(true);
-
-    const res = await axios.put(
-      `https://api.emibocquillon.fr/admin/users/block/${id}`,
-      {},
-      authConfig,
+    const confirmed = await showConfirmToast(
+      `Êtes-vous sûr de vouloir ${actionLabel} cet utilisateur ?`,
     );
 
-    if (res.data?.success) {
-      toast.update(loadingToast, {
-        render:
-          actionLabel === "bloquer"
-            ? "Utilisateur bloqué avec succès"
-            : "Utilisateur débloqué avec succès",
-        type: "success",
-        isLoading: false,
-        autoClose: 3000,
-      });
+    if (!confirmed) return;
 
-      setIsBlocked((prev) => !prev);
-    } else {
+    const loadingToast = toast.loading(
+      `${actionLabel === "bloquer" ? "Blocage" : "Déblocage"} en cours...`,
+    );
+
+    try {
+      setBlockLoading(true);
+
+      const res = await axios.put(
+        `https://api.emibocquillon.fr/admin/users/block/${id}`,
+        {},
+        authConfig,
+      );
+
+      if (res.data?.success) {
+        toast.update(loadingToast, {
+          render:
+            actionLabel === "bloquer"
+              ? "Utilisateur bloqué avec succès"
+              : "Utilisateur débloqué avec succès",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+        });
+
+        setIsBlocked((prev) => !prev);
+      } else {
+        toast.update(loadingToast, {
+          render:
+            res.data?.message ||
+            `Échec lors du ${actionLabel} de l'utilisateur`,
+          type: "error",
+          isLoading: false,
+          autoClose: 4000,
+        });
+      }
+    } catch (error) {
+      console.error(`${actionLabel} user failed`, error);
+
+      if (handleAuthError(error)) {
+        toast.dismiss(loadingToast);
+        return;
+      }
+
       toast.update(loadingToast, {
         render:
-          res.data?.message ||
-          `Échec lors du ${actionLabel} de l'utilisateur`,
+          error.response?.data?.message ||
+          `Impossible de ${actionLabel} l'utilisateur. Veuillez réessayer.`,
         type: "error",
         isLoading: false,
         autoClose: 4000,
       });
+    } finally {
+      setBlockLoading(false);
     }
-  } catch (error) {
-    console.error(`${actionLabel} user failed`, error);
-
-    toast.update(loadingToast, {
-      render:
-        error.response?.data?.message ||
-        `Impossible de ${actionLabel} l'utilisateur. Veuillez réessayer.`,
-      type: "error",
-      isLoading: false,
-      autoClose: 4000,
-    });
-  } finally {
-    setBlockLoading(false);
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -368,7 +388,7 @@ export default function CustomerDetail() {
         className="flex items-center gap-2 text-sm text-gray-600 mb-4"
       >
         <FaArrowLeft />
-        Back to Customer list
+        Retour à la liste des clients
       </button>
 
       <h1 className="text-xl font-semibold mb-6">Gestion de la clientèle</h1>
@@ -505,26 +525,25 @@ export default function CustomerDetail() {
             </tr>
           </thead>
           <tbody className="">
-           {reports.map((r) => {
-  const label = REPORT_TYPE_TO_STATUS[r.type] || "Inconnu";
+            {reports.map((r) => {
+              const label = REPORT_TYPE_TO_STATUS[r.type] || "Inconnu";
 
-  return (
-    <tr key={r.id}>
-      <td className="p-4 px-6 font-medium">{r.id}</td>
-      <td className="p-4 px-6">{r.date}</td>
-      <td className="p-4 px-6">
-        <span
-          className={`rounded-full text-xs py-1 ${
-            statusStyles[label]
-          }`}
-        >
-          {label}
-        </span>
-      </td>
-    </tr>
-  );
-})}
-
+              return (
+                <tr key={r.id}>
+                  <td className="p-4 px-6 font-medium">{r.id}</td>
+                  <td className="p-4 px-6">{r.date}</td>
+                  <td className="p-4 px-6">
+                    <span
+                      className={`rounded-full text-xs py-1 ${
+                        statusStyles[label]
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
