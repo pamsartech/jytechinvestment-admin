@@ -130,7 +130,7 @@ function Navbar({ heading }) {
                       className="text-gray-500 text-sm"
                     />
                   )}
-                  {!loading && notifications.length > 0 && (
+                  {/* {!loading && notifications.length > 0 && (
                     <button
                       onClick={markAllAsRead}
                       disabled={markingAll}
@@ -142,7 +142,7 @@ function Navbar({ heading }) {
                     >
                       {markingAll ? "Marking..." : "Mark all as read"}
                     </button>
-                  )}
+                  )} */}
                 </div>
               </div>
 
@@ -190,7 +190,7 @@ function Navbar({ heading }) {
                           item.isRead ? "text-gray-400" : "text-blue-600"
                         }`}
                       >
-                        {item.isRead ? "Read" : "Unread"}
+                        {/* {item.isRead ? "Read" : "Unread"} */}
                       </p>
                     </li>
                   ))}

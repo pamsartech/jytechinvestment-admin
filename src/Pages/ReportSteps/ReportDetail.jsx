@@ -199,7 +199,7 @@ const showConfirmToast = (message) => {
         autoClose: false,
         closeOnClick: false,
         draggable: false,
-        position: "top-center",
+        position: "bottom-right",
       }
     );
   });
