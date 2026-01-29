@@ -48,6 +48,7 @@ export default function CMS() {
 
   const [termsContent, setTermsContent] = useState("");
   const [privacyContent, setPrivacyContent] = useState("");
+  const [legalContent, setLegalContent] = useState("");
 
   const [videoTitle, setVideoTitle] = useState("");
   const [videoFile, setVideoFile] = useState(null);
@@ -105,6 +106,7 @@ export default function CMS() {
 
           setTermsContent(content?.TermsAndConditions || "");
           setPrivacyContent(content?.PrivacyPolicy || "");
+          setLegalContent(content?.LegalNotice || "");
 
           if (content?.TutorialMangment) {
             setVideoTitle(content.TutorialMangment.VideoTittle || "");
@@ -237,6 +239,41 @@ export default function CMS() {
     }
   };
 
+  // ------------- Legal Notice ---------
+  const saveLegal = async () => {
+    const loadingToast = toast.loading(
+      "Enregistrement des mentions légales...",
+    );
+
+    try {
+      setSaving(true);
+
+      await axios.post(
+        "https://api.emibocquillon.fr/api/content/legal-notice",
+        { legalNotice: legalContent },
+        authConfig,
+      );
+
+      toast.update(loadingToast, {
+        render: "Mentions légales enregistrées avec succès",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch (err) {
+      console.error(err);
+
+      toast.update(loadingToast, {
+        render: "Échec de l'enregistrement des mentions légales",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // ---------------- SAVE VIDEO ----------------
   const saveVideo = async () => {
     if (!videoFile) {
@@ -310,18 +347,31 @@ export default function CMS() {
           <TabsSkeleton />
         ) : (
           <div className="flex gap-3 mb-6">
+            {/* terms button */}
             <button
               onClick={() => setActiveTab("terms")}
               className={tabClass("terms")}
             >
               <FaListUl /> Conditions générales
             </button>
+
+            {/* privacy button */}
             <button
               onClick={() => setActiveTab("privacy")}
               className={tabClass("privacy")}
             >
               <FaLock /> Politique de confidentialité
             </button>
+
+            {/* legal button */}
+            <button
+              onClick={() => setActiveTab("legal")}
+              className={tabClass("legal")}
+            >
+              <FaFileAlt /> Mentions légales
+            </button>
+
+            {/* video button */}
             <button
               onClick={() => setActiveTab("video")}
               className={tabClass("video")}
@@ -337,6 +387,7 @@ export default function CMS() {
             <>
               {activeTab === "terms" && <EditorSkeleton />}
               {activeTab === "privacy" && <EditorSkeleton />}
+              {activeTab === "legal" && <EditorSkeleton />}
               {activeTab === "video" && <VideoSkeleton />}
             </>
           ) : (
@@ -368,7 +419,7 @@ export default function CMS() {
                     <button
                       onClick={saveTerms}
                       disabled={saving}
-                      className={`px-5 py-2 rounded-full text-white ${
+                      className={`px-5 py-2 mt-5 rounded-full text-white ${
                         saving ? "bg-gray-400" : "bg-green-900"
                       }`}
                     >
@@ -405,11 +456,50 @@ export default function CMS() {
                     <button
                       onClick={savePrivacy}
                       disabled={saving}
-                      className={`px-5 py-2 rounded-full text-white ${
+                      className={`px-5 py-2 mt-5 rounded-full text-white ${
                         saving ? "bg-gray-400" : "bg-green-900"
                       }`}
                     >
                       {saving ? "Saving..." : "Enregistrer la confidentialité"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* LEGAL NOTICE */}
+              {activeTab === "legal" && (
+                <div className="space-y-4">
+                  <CKEditor
+                    editor={ClassicEditor}
+                    data={legalContent}
+                    onChange={(event, editor) => {
+                      setLegalContent(editor.getData());
+                    }}
+                    config={{
+                      toolbar: [
+                        "bold",
+                        "italic",
+                        "link",
+                        "|",
+                        "numberedList",
+                        "|",
+                        "undo",
+                        "redo",
+                      ],
+                    }}
+                  />
+
+                  <div className="w-full flex justify-end">
+                    <button
+                      onClick={saveLegal}
+                      disabled={saving}
+                      className={`px-5 py-2 mt-5 rounded-full text-white ${
+                        saving ? "bg-gray-400" : "bg-green-900"
+                      }`}
+                    >
+                      {saving
+                        ? "Saving..."
+                        : "Enregistrer les mentions légales"}
                     </button>
                   </div>
                 </div>
@@ -472,7 +562,7 @@ export default function CMS() {
                         disabled={saving}
                         className="px-5 py-2 rounded-full border border-red-500 text-red-600 hover:bg-red-50"
                       >
-                        Clear
+                        claire
                       </button>
                     )}
 
