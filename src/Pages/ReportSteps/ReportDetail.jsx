@@ -19,7 +19,7 @@ import Skeleton from "@mui/material/Skeleton";
 
 const REPORT_TYPE_UI = {
   purchase: {
-    label: "Complété",
+    label: "Terminé",
     pill: "bg-green-100 text-green-700",
     canDownload: true,
   },

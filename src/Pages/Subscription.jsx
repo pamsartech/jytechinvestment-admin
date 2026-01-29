@@ -206,7 +206,7 @@ const handleAuthError = (error) => {
 
   try {
     await axios.put(
-      "https://api.emibocquillon.fr/api/admin/edit/696753c2f2bf8d805e0e7699",
+      "https://api.emibocquillon.fr/api/admin/edit/697b3afbedc928db9a515882",
       payload,
       authConfig
     );
@@ -262,7 +262,7 @@ const handleAuthError = (error) => {
 
   try {
     await axios.put(
-      "https://api.emibocquillon.fr/api/admin/edit/69675444f2bf8d805e0e769d",
+      "https://api.emibocquillon.fr/api/admin/edit/697b3b09edc928db9a515884",
       payload,
       authConfig
     );

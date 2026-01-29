@@ -29,7 +29,7 @@ const PAGE_SIZE = 9;
 
 const REPORT_TYPE_UI = {
   purchase: {
-    label: "Complète",
+    label: "Terminé",
     pill: "bg-green-100 text-green-700",
   },
   draft: {
@@ -284,7 +284,7 @@ export default function Report() {
             </button>
 
             {showFilterMenu && (
-              <div className="absolute right-0 mt-2 w-40 bg-white border p-1 rounded-lg shadow-md z-10">
+              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-300 p-3 rounded-lg shadow-md z-10">
                 {[
                   { value: "all", label: "Tous" },
                   { value: "purchase", label: "Complète" },
@@ -322,7 +322,7 @@ export default function Report() {
             </button>
 
             {showSortMenu && (
-              <div className="absolute right-0 mt-2 w-52 bg-white border p-1 rounded-lg shadow-md z-10">
+              <div className="absolute right-0 mt-2 w-52 bg-white border border-gray-300 p-3 rounded-lg shadow-md z-10">
                 {[
                   ["report-asc", "Identifiant du rapport (A–Z)"],
                   ["report-desc", "Identifiant du rapport (Z–A)"],

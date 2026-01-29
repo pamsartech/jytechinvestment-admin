@@ -294,7 +294,7 @@ export default function Payments() {
             </button>
 
             {showFilter && (
-              <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow w-44 z-10">
+              <div className="absolute right-0 mt-2 bg-white border border-gray-300 p-3 rounded-lg shadow w-44 z-10">
                 {["All", "Paid", "Pending", "Failed", "Refunded"].map((s) => (
                   <button
                     key={s}
@@ -325,7 +325,7 @@ export default function Payments() {
             </button>
 
             {showSort && (
-              <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow w-52 z-10">
+              <div className="absolute right-0 mt-2 bg-white border border-gray-300 p-3 rounded-lg shadow w-52 z-10">
                 {["date-desc", "date-asc", "amount-desc", "amount-asc"].map(
                   (v) => (
                     <button

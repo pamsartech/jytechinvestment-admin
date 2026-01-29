@@ -193,18 +193,27 @@ function Dashboard() {
     return `${Math.floor(diff / 86400)}d ago`;
   };
 
-  const activityBadge = (type) => {
-    switch (type) {
-      case "payment":
-        return "bg-emerald-100 text-emerald-600";
-      case "project":
-        return "bg-indigo-100 text-indigo-600";
-      case "user_update":
-        return "bg-gray-100 text-gray-600";
-      default:
-        return "bg-gray-100 text-gray-600";
-    }
-  };
+  const ACTIVITY_MAP = {
+  payment: {
+    label: "Paiement",
+    badge: "bg-emerald-100 text-emerald-600",
+  },
+  project: {
+    label: "Projet",
+    badge: "bg-indigo-100 text-indigo-600",
+  },
+  user_update: {
+    label: "Mise à jour utilisateur",
+    badge: "bg-gray-100 text-gray-600",
+  },
+};
+
+const activityLabelFR = (type) =>
+  ACTIVITY_MAP[type]?.label || "Activité";
+
+const activityBadge = (type) =>
+  ACTIVITY_MAP[type]?.badge || "bg-gray-100 text-gray-600";
+
 
   const formatAmount = (amount) => `€ ${Number(amount || 0).toFixed(2)}`;
 
@@ -404,12 +413,19 @@ function Dashboard() {
 
                     <p className="text-sm text-gray-500">{activity.action}</p>
 
-                    <span
+                    {/* <span
                       className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${activityBadge(
                         activity.type,
                       )}`}
                     >
                       {activity.type.replace("_", " ")}
+                    </span> */}
+                    <span
+                      className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${activityBadge(
+                        activity.type,
+                      )}`}
+                    >
+                      {activityLabelFR(activity.type)}
                     </span>
                   </div>
                 </div>
